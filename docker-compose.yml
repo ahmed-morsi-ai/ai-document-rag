@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ai-rag-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ai_rag
+      POSTGRES_USER: rag_user
+      POSTGRES_PASSWORD: rag_password
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

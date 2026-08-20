@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
-
+from datetime import datetime, timezone
+from sqlalchemy import Column, Integer, String, DateTime, Boolean  # أضف جميع الحقول المستخدمة في النموذج
 from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -35,11 +36,10 @@ class User(Base):
         nullable=False,
     )
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=datetime.utcnow,
-        nullable=False,
-    )
+    created_at = Column(
+    DateTime(timezone=True),
+    default=lambda: datetime.now(timezone.utc),
+)
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

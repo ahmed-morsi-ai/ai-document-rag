@@ -30,3 +30,20 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store

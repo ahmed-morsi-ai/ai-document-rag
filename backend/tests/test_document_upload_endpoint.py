@@ -1,5 +1,7 @@
 import os
 import unittest
+from io import BytesIO
+from pathlib import Path
 from unittest import mock
 from uuid import uuid4
 
@@ -10,20 +12,37 @@ os.environ.setdefault(
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 
+from fastapi import UploadFile
 from fastapi.testclient import TestClient
+from starlette.datastructures import Headers
 
 from app.api.dependencies.auth import get_current_user
+from app.db.database import get_db
+from app.api.routes.documents import upload_document
+from app.db.models import Document, User
 from app.main import app
 
 
-class DocumentUploadEndpointTests(unittest.TestCase):
+class DocumentUploadEndpointTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
+        self.owner_id = uuid4()
         self.user = mock.Mock(
-            id=uuid4(),
+            id=self.owner_id,
             is_active=True,
         )
+        self.mock_db = mock.Mock()
+        self.mock_db.commit = mock.AsyncMock()
+        self.mock_db.refresh = mock.AsyncMock()
+        self.mock_db.rollback = mock.AsyncMock()
 
-        app.dependency_overrides[get_current_user] = lambda: self.user
+        app.dependency_overrides[get_current_user] = (
+            lambda: self.user
+        )
+
+        async def override_get_db():
+            yield self.mock_db
+
+        app.dependency_overrides[get_db] = override_get_db
         self.client = TestClient(app)
 
     def tearDown(self):
@@ -41,11 +60,7 @@ class DocumentUploadEndpointTests(unittest.TestCase):
             },
         )
 
-        self.assertEqual(response.status_code, 202)
-        self.assertEqual(
-            response.json(),
-            {"detail": "Document upload accepted"},
-        )
+        self.assertEqual(response.status_code, 201)
 
     def test_rejects_unsupported_document_type(self):
         response = self.client.post(
@@ -80,6 +95,122 @@ class DocumentUploadEndpointTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 401)
+
+    async def test_authenticated_upload_persists_document(self):
+        content = b"test document content"
+
+        storage_path = (
+            Path(str(self.owner_id))
+            / "document.pdf"
+        )
+
+        mock_user = mock.Mock(
+            id=self.owner_id,
+        )
+
+        mock_db = mock.Mock()
+        mock_db.commit = mock.AsyncMock()
+        mock_db.refresh = mock.AsyncMock()
+        mock_db.rollback = mock.AsyncMock()
+
+        with (
+            mock.patch(
+                "app.api.routes.documents.store_document",
+                new_callable=mock.AsyncMock,
+                return_value=str(storage_path),
+            ) as mock_store_document,
+            mock.patch(
+                "app.api.routes.documents.validate_document_upload",
+            ) as mock_validate,
+        ):
+            file = UploadFile(
+                filename="document.pdf",
+                file=BytesIO(content),
+                headers=Headers(
+                    {"content-type": "application/pdf"}
+                ),
+            )
+
+            result = await upload_document(
+                file=file,
+                current_user=mock_user,
+                db=mock_db,
+            )
+
+        mock_validate.assert_called_once_with(file)
+        mock_store_document.assert_awaited_once_with(
+            file,
+            self.owner_id,
+        )
+        mock_db.add.assert_called_once_with(result)
+        mock_db.commit.assert_awaited_once()
+        mock_db.refresh.assert_awaited_once_with(result)
+
+        self.assertIsInstance(result, Document)
+        self.assertEqual(result.owner_id, self.owner_id)
+        self.assertEqual(
+            result.original_filename,
+            "document.pdf",
+        )
+        self.assertEqual(
+            result.mime_type,
+            "application/pdf",
+        )
+        self.assertEqual(
+            result.storage_path,
+            str(storage_path),
+        )
+
+    async def test_database_failure_removes_stored_file(self):
+        content = b"test document content"
+        storage_path = (
+            Path(str(self.owner_id))
+            / "document.pdf"
+        )
+
+        mock_db = mock.Mock()
+        mock_db.commit = mock.AsyncMock(
+            side_effect=Exception(
+                "database commit failed"
+            )
+        )
+        mock_db.rollback = mock.AsyncMock()
+
+        with (
+            mock.patch(
+                "app.api.routes.documents.store_document",
+                new_callable=mock.AsyncMock,
+                return_value=str(storage_path),
+            ),
+            mock.patch(
+                "app.api.routes.documents.delete_document",
+            ) as mock_delete_document,
+        ):
+            file = UploadFile(
+                filename="document.pdf",
+                file=BytesIO(content),
+                headers=Headers(
+                    {
+                        "content-type":
+                        "application/pdf"
+                    }
+                ),
+            )
+
+            with self.assertRaisesRegex(
+                Exception,
+                "database commit failed",
+            ):
+                await upload_document(
+                    file=file,
+                    current_user=self.user,
+                    db=mock_db,
+                )
+
+        mock_db.rollback.assert_awaited_once()
+        mock_delete_document.assert_called_once_with(
+            str(storage_path)
+        )
 
 
 if __name__ == "__main__":

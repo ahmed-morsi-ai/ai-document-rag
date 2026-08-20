@@ -16,6 +16,7 @@ os.environ.setdefault("JWT_ALGORITHM", "HS256")
 from fastapi import UploadFile
 
 from app.services.document_storage import (
+    delete_document,
     generate_storage_path,
     get_storage_root,
     store_document,
@@ -47,8 +48,14 @@ class DocumentStorageTests(unittest.IsolatedAsyncioTestCase):
         )
 
         self.assertFalse(storage_path.is_absolute())
-        self.assertEqual(storage_path.parent, Path(str(owner_id)))
-        self.assertEqual(storage_path.suffix, ".pdf")
+        self.assertEqual(
+            storage_path.parent,
+            Path(str(owner_id)),
+        )
+        self.assertEqual(
+            storage_path.suffix,
+            ".pdf",
+        )
 
     def test_generate_storage_path_produces_unique_filenames(self):
         owner_id = uuid4()
@@ -62,7 +69,10 @@ class DocumentStorageTests(unittest.IsolatedAsyncioTestCase):
             "document.pdf",
         )
 
-        self.assertNotEqual(first_path, second_path)
+        self.assertNotEqual(
+            first_path,
+            second_path,
+        )
 
     async def test_store_document_creates_directory_and_writes_file(self):
         owner_id = uuid4()
@@ -87,8 +97,12 @@ class DocumentStorageTests(unittest.IsolatedAsyncioTestCase):
 
             destination = storage_root / relative_path
 
-            self.assertFalse(Path(relative_path).is_absolute())
-            self.assertTrue(destination.exists())
+            self.assertFalse(
+                Path(relative_path).is_absolute()
+            )
+            self.assertTrue(
+                destination.exists()
+            )
             self.assertEqual(
                 destination.read_bytes(),
                 content,
@@ -133,7 +147,9 @@ class DocumentStorageTests(unittest.IsolatedAsyncioTestCase):
                     b"replacement content",
                 )
 
-                with self.assertRaises(FileExistsError):
+                with self.assertRaises(
+                    FileExistsError
+                ):
                     await store_document(
                         file,
                         owner_id,
@@ -157,7 +173,10 @@ class DocumentStorageTests(unittest.IsolatedAsyncioTestCase):
         class FailingFile:
             def __init__(self, path: Path):
                 self.path = path
-                self.file = original_open(path, "xb")
+                self.file = original_open(
+                    path,
+                    "xb",
+                )
 
             def write(self, data: bytes):
                 self.file.write(data[:1])
@@ -181,7 +200,9 @@ class DocumentStorageTests(unittest.IsolatedAsyncioTestCase):
 
         with tempfile.TemporaryDirectory() as temp_dir:
             storage_root = Path(temp_dir)
-            destination = storage_root / relative_path
+            destination = (
+                storage_root / relative_path
+            )
 
             def open_with_partial_write(
                 path: Path,
@@ -216,7 +237,67 @@ class DocumentStorageTests(unittest.IsolatedAsyncioTestCase):
                         owner_id,
                     )
 
-            self.assertFalse(destination.exists())
+            self.assertFalse(
+                destination.exists()
+            )
+
+    def test_delete_document_removes_existing_file(self):
+        owner_id = uuid4()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            storage_root = Path(temp_dir)
+            relative_path = (
+                Path(str(owner_id))
+                / "document.pdf"
+            )
+            destination = (
+                storage_root / relative_path
+            )
+
+            destination.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+            destination.write_bytes(
+                b"document content"
+            )
+
+            with mock.patch(
+                "app.services.document_storage.get_storage_root",
+                return_value=storage_root,
+            ):
+                delete_document(
+                    str(relative_path)
+                )
+
+            self.assertFalse(
+                destination.exists()
+            )
+
+    def test_delete_document_ignores_missing_file(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            storage_root = Path(temp_dir)
+
+            with mock.patch(
+                "app.services.document_storage.get_storage_root",
+                return_value=storage_root,
+            ):
+                delete_document(
+                    "missing/document.pdf"
+                )
+
+    def test_delete_document_rejects_path_outside_storage_root(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            storage_root = Path(temp_dir)
+
+            with mock.patch(
+                "app.services.document_storage.get_storage_root",
+                return_value=storage_root,
+            ):
+                with self.assertRaises(ValueError):
+                    delete_document(
+                        "../outside.pdf"
+                    )
 
 
 if __name__ == "__main__":

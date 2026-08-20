@@ -46,3 +46,23 @@ async def store_document(
         raise
 
     return str(relative_path)
+
+
+def delete_document(storage_path: str) -> None:
+    storage_root = get_storage_root()
+
+    destination = (
+        storage_root / storage_path
+    ).resolve()
+
+    try:
+        destination.relative_to(storage_root)
+    except ValueError:
+        raise ValueError(
+            "Storage path must be inside storage root"
+        )
+
+    try:
+        destination.unlink()
+    except FileNotFoundError:
+        pass

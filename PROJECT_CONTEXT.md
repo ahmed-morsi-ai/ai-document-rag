@@ -25,7 +25,7 @@
 - Focused document storage tests exist in `backend/tests/test_document_storage.py`.
 
 ## In Progress
-- No implementation task is currently in progress after Task 6.
+- No implementation task is currently in progress after Task 7.
 
 ## Planned
 - Add document file upload endpoints and storage flow.
@@ -43,7 +43,7 @@
 ## Known Issues
 - The project still does not implement the full roadmap beyond the auth foundation and document database foundation.
 - The frontend directory is empty.
-- The document upload flow currently validates authenticated upload requests and supports local file storage, but does not yet implement database persistence.
+- The document upload flow now validates authenticated upload requests, stores files locally, persists document metadata, and removes stored files if database persistence fails.
 - Parsing, chunking, embeddings, vector storage, conversation model, chat endpoint, and RAG implementation do not exist yet.
 - Test coverage currently consists of focused auth regression, document model/migration, document upload validation, and document upload endpoint checks rather than a comprehensive application test suite.
 - Authentication tests emit an `InsecureKeyLengthWarning` because the JWT HMAC key used in the test environment is shorter than the recommended 32 bytes. This was not changed as part of Task 4.
@@ -57,7 +57,7 @@
 - Task 6: Add local document storage service — completed and committed.
 
 ## Current Task
-- Task 6: Add local document storage service — completed and verified.
+- Task 7: Persist uploaded document metadata and connect the upload flow to the Document model — completed and verified.
 
 ## Next Task
 - Task 7: Persist uploaded document metadata and connect the upload flow to the Document model.

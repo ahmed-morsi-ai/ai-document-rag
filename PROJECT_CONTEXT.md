@@ -9,9 +9,10 @@
 - Alembic is configured and a user migration exists in `backend/alembic/versions/7c16b04319c9_create_users_table.py`.
 - Docker Compose defines a PostgreSQL service and backend service in `docker-compose.yml`.
 - The auth configuration mismatch regression was fixed in the repository by updating JWT and database settings references to use the uppercase configuration attributes.
+- Commit `c0d75c9` contains the completed JWT configuration fix and is already pushed to `origin/main`.
 
 ## In Progress
-- Completion of the authentication flow beyond the basic scaffold.
+- No implementation task is currently in progress.
 - Expansion from a user-only model into the full document and conversation architecture in the project roadmap.
 - Full project build-out for file ingestion, RAG, chat, and frontend UI.
 
@@ -33,14 +34,14 @@
 - The frontend directory is empty.
 - No document model, conversation model, or RAG implementation exists yet.
 - No tests exist beyond the focused auth regression check created for this fix.
-- No GitHub remote is configured beyond the repository URL already set in Git.
+- The working tree is currently clean.
 
 ## Completed Tasks
 - Task 1: Inspect Configuration & Authentication Architecture — completed.
-- Task 2: Fix Settings Attribute Mismatch — completed after confirming the regression in the current repository state.
+- Task 2: Fix JWT Settings Attribute Mismatch — completed in commit `c0d75c9` and pushed to `origin/main`.
 
 ## Current Task
-- Fix the current JWT settings regression and confirm the auth dependency works with the actual project configuration.
+- Synchronize project context with the actual repository state before starting new implementation work.
 
 ## Next Task
-- Add the document model and migration for file uploads and document processing, then validate the schema with Alembic.
+- Add the document model and Alembic migration for file uploads and document processing, then validate the schema with Alembic.

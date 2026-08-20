@@ -27,7 +27,7 @@ def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
 
     context.configure(
-        url=settings.database_url,
+        url=settings.DATABASE_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -45,7 +45,7 @@ def run_migrations_online() -> None:
         {},
     )
 
-    configuration["sqlalchemy.url"] = settings.database_url.replace(
+    configuration["sqlalchemy.url"] = settings.DATABASE_URL.replace(
         "+asyncpg",
         "",
     )

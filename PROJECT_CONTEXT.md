@@ -16,9 +16,12 @@
 - Document upload request validation exists in `backend/app/services/document_validation.py`.
 - Validation supports PDF, DOCX, and TXT files and checks filename presence, length, path separators, invalid characters, file extension, and extension/content-type consistency.
 - Focused document upload validation tests exist in `backend/tests/test_document_validation.py`.
+- Authenticated document upload endpoint skeleton exists at `POST /documents/upload`.
+- The endpoint reuses document upload validation and does not yet perform file storage, database persistence, parsing, or processing.
+- Focused document upload endpoint tests exist in `backend/tests/test_document_upload_endpoint.py`.
 
 ## In Progress
-- No implementation task is currently in progress after Task 4.
+- No implementation task is currently in progress after Task 5.
 
 ## Planned
 - Add document file upload endpoints and storage flow.
@@ -36,18 +39,20 @@
 ## Known Issues
 - The project still does not implement the full roadmap beyond the auth foundation and document database foundation.
 - The frontend directory is empty.
-- No document upload endpoints, parsing, chunking, embeddings, vector storage, conversation model, chat endpoint, or RAG implementation exists yet.
-- Test coverage currently consists of focused auth regression, document model/migration, and document upload validation checks rather than a comprehensive application test suite.
+- The document upload flow currently validates authenticated upload requests but does not yet implement file storage or database persistence.
+- Parsing, chunking, embeddings, vector storage, conversation model, chat endpoint, and RAG implementation do not exist yet.
+- Test coverage currently consists of focused auth regression, document model/migration, document upload validation, and document upload endpoint checks rather than a comprehensive application test suite.
 - Authentication tests emit an `InsecureKeyLengthWarning` because the JWT HMAC key used in the test environment is shorter than the recommended 32 bytes. This was not changed as part of Task 4.
 
 ## Completed Tasks
 - Task 1: Inspect Configuration & Authentication Architecture — completed.
 - Task 2: Fix JWT Settings Attribute Mismatch — completed in commit `c0d75c9` and pushed to `origin/main`.
 - Task 3: Document Model + Alembic Migration — completed in commit `feat(db): add document model and migration`.
-- Task 4: Add document upload request validation — completed.
+- Task 4: Add document upload request validation — completed in commit `3b8bdf6` and pushed to `origin/main`.
+- Task 5: Add document upload endpoint skeleton — completed locally and verified with focused and full test suites.
 
 ## Current Task
-- No implementation task is currently in progress after Task 4.
+- Task 5: Add document upload endpoint skeleton — completed and verified.
 
 ## Next Task
-- Task 5: Add document upload endpoint skeleton.
+- Task 6: Add local document storage service.

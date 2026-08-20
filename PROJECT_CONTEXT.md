@@ -13,9 +13,12 @@
 - Document SQLAlchemy model exists in `backend/app/db/models.py`.
 - Document Alembic migration exists in `backend/alembic/versions/b8e6d2f4a913_add_documents_table.py`.
 - Focused document model and migration tests exist in `backend/tests/test_document_model_migration.py`.
+- Document upload request validation exists in `backend/app/services/document_validation.py`.
+- Validation supports PDF, DOCX, and TXT files and checks filename presence, length, path separators, invalid characters, file extension, and extension/content-type consistency.
+- Focused document upload validation tests exist in `backend/tests/test_document_validation.py`.
 
 ## In Progress
-- No implementation task is currently in progress after Task 3.
+- No implementation task is currently in progress after Task 4.
 
 ## Planned
 - Add document file upload endpoints and storage flow.
@@ -34,15 +37,17 @@
 - The project still does not implement the full roadmap beyond the auth foundation and document database foundation.
 - The frontend directory is empty.
 - No document upload endpoints, parsing, chunking, embeddings, vector storage, conversation model, chat endpoint, or RAG implementation exists yet.
-- No tests exist beyond the focused auth regression and document model/migration checks.
+- Test coverage currently consists of focused auth regression, document model/migration, and document upload validation checks rather than a comprehensive application test suite.
+- Authentication tests emit an `InsecureKeyLengthWarning` because the JWT HMAC key used in the test environment is shorter than the recommended 32 bytes. This was not changed as part of Task 4.
 
 ## Completed Tasks
 - Task 1: Inspect Configuration & Authentication Architecture — completed.
 - Task 2: Fix JWT Settings Attribute Mismatch — completed in commit `c0d75c9` and pushed to `origin/main`.
 - Task 3: Document Model + Alembic Migration — completed in commit `feat(db): add document model and migration`.
+- Task 4: Add document upload request validation — completed.
 
 ## Current Task
-- Task 3: Document Model + Alembic Migration — completed.
+- No implementation task is currently in progress after Task 4.
 
 ## Next Task
-- Add document file upload endpoints and storage flow backed by the Document model.
+- Task 5: Add document upload endpoint skeleton.

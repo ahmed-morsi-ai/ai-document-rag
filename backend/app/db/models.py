@@ -1,9 +1,8 @@
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
-from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, DateTime, Boolean  # أضف جميع الحقول المستخدمة في النموذج
-from sqlalchemy import Boolean, DateTime, String
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
@@ -36,14 +35,72 @@ class User(Base):
         nullable=False,
     )
 
-    created_at = Column(
-    DateTime(timezone=True),
-    default=lambda: datetime.now(timezone.utc),
-)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
         nullable=False,
+    )
+
+    documents: Mapped[list["Document"]] = relationship(
+        back_populates="owner",
+    )
+
+
+class Document(Base):
+    __tablename__ = "documents"
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    owner_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id"),
+        index=True,
+        nullable=False,
+    )
+
+    original_filename: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
+    mime_type: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
+    storage_path: Mapped[str] = mapped_column(
+        String(1024),
+        nullable=False,
+    )
+
+    processing_status: Mapped[str] = mapped_column(
+        String(50),
+        default="uploaded",
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
+
+    owner: Mapped[User] = relationship(
+        back_populates="documents",
     )

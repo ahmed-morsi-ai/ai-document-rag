@@ -19,9 +19,13 @@
 - Authenticated document upload endpoint skeleton exists at `POST /documents/upload`.
 - The endpoint reuses document upload validation and does not yet perform file storage, database persistence, parsing, or processing.
 - Focused document upload endpoint tests exist in `backend/tests/test_document_upload_endpoint.py`.
+- Local document storage service exists in `backend/app/services/document_storage.py`.
+- Document storage paths are generated uniquely and scoped by document owner.
+- The storage service creates owner directories, writes uploaded files locally, prevents overwriting existing files, and removes partial files when a write operation fails.
+- Focused document storage tests exist in `backend/tests/test_document_storage.py`.
 
 ## In Progress
-- No implementation task is currently in progress after Task 5.
+- No implementation task is currently in progress after Task 6.
 
 ## Planned
 - Add document file upload endpoints and storage flow.
@@ -39,7 +43,7 @@
 ## Known Issues
 - The project still does not implement the full roadmap beyond the auth foundation and document database foundation.
 - The frontend directory is empty.
-- The document upload flow currently validates authenticated upload requests but does not yet implement file storage or database persistence.
+- The document upload flow currently validates authenticated upload requests and supports local file storage, but does not yet implement database persistence.
 - Parsing, chunking, embeddings, vector storage, conversation model, chat endpoint, and RAG implementation do not exist yet.
 - Test coverage currently consists of focused auth regression, document model/migration, document upload validation, and document upload endpoint checks rather than a comprehensive application test suite.
 - Authentication tests emit an `InsecureKeyLengthWarning` because the JWT HMAC key used in the test environment is shorter than the recommended 32 bytes. This was not changed as part of Task 4.
@@ -50,9 +54,10 @@
 - Task 3: Document Model + Alembic Migration — completed in commit `feat(db): add document model and migration`.
 - Task 4: Add document upload request validation — completed in commit `3b8bdf6` and pushed to `origin/main`.
 - Task 5: Add document upload endpoint skeleton — completed locally and verified with focused and full test suites.
+- Task 6: Add local document storage service — completed and committed.
 
 ## Current Task
-- Task 5: Add document upload endpoint skeleton — completed and verified.
+- Task 6: Add local document storage service — completed and verified.
 
 ## Next Task
-- Task 6: Add local document storage service.
+- Task 7: Persist uploaded document metadata and connect the upload flow to the Document model.

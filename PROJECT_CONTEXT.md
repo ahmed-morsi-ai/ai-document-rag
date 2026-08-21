@@ -94,12 +94,13 @@
 - Task 12 Batch 1: Add document indexing orchestration service — completed in commit `f1563c7` and verified.
 - Task 12 Batch 2: Integrate document indexing with document upload — completed and verified.
 - Task 13 Batch 1: Add provider-independent retrieval service — completed and verified.
+- Task 13 Batch 2: Add authenticated retrieval API endpoint — completed and verified.
 
 ## Current Task
-- Task 13: Retrieval — Batch 1 completed and verified.
-- A provider-independent retrieval service maps query text through the existing embedding and vector-store abstractions.
-- Retrieval currently exists only as a service layer; no retrieval API exists yet.
-- Chat and RAG orchestration are not implemented yet.
+- Task 13: Retrieval — Batch 2 completed and verified.
+- `POST /documents/search` exposes the existing retrieval service through an authenticated HTTP endpoint.
+- The endpoint validates query and `top_k`, preserves retrieval ordering, and returns provider-independent result data.
+- Chat, RAG orchestration, and LLM integration are not implemented yet.
 
 ## Next Task
-- Next: Implement a retrieval API/integration batch without changing the retrieval service abstraction.
+- Next: Implement the separate chat/RAG integration batch using the existing retrieval service and API.

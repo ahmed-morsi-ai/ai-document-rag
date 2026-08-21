@@ -95,12 +95,13 @@
 - Task 12 Batch 2: Integrate document indexing with document upload — completed and verified.
 - Task 13 Batch 1: Add provider-independent retrieval service — completed and verified.
 - Task 13 Batch 2: Add authenticated retrieval API endpoint — completed and verified.
+- Task 14 Batch 1: Add provider-independent RAG context service — completed and verified.
 
 ## Current Task
-- Task 13: Retrieval — Batch 2 completed and verified.
-- `POST /documents/search` exposes the existing retrieval service through an authenticated HTTP endpoint.
-- The endpoint validates query and `top_k`, preserves retrieval ordering, and returns provider-independent result data.
-- Chat, RAG orchestration, and LLM integration are not implemented yet.
+- Task 14: Chat/RAG — Batch 1 completed and verified.
+- A provider-independent RAG service assembles deterministic context from the existing retrieval service.
+- The current RAG flow is query → retrieval → deterministic context assembly.
+- No LLM provider, chat endpoint, conversation persistence, or generation logic exists yet.
 
 ## Next Task
-- Next: Implement the separate chat/RAG integration batch using the existing retrieval service and API.
+- Next: Select and integrate the LLM/provider layer in a separate batch without changing retrieval or RAG context assembly.

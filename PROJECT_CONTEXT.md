@@ -47,8 +47,8 @@
 - Concrete embedding provider selection and vector storage integration remain deferred.
 
 ## Planned
-- Integrate a concrete embedding provider once one is selected.
-- Add vector storage integration after the embedding provider architecture is established.
+- Implement document indexing using the existing parser, chunking, embedding, and vector-store components.
+- Implement retrieval workflows on top of the vector-store query contract.
 - Add conversation model and chat endpoint with retrieval support.
 - Build frontend auth, dashboard, upload, and chat UI.
 - Add production-grade configuration, tests, and project documentation.
@@ -65,7 +65,11 @@
 - Document parser abstraction, parser selection, PDF, DOCX, and TXT text extraction, and deterministic character-based document chunking are implemented.
 - A provider-independent embedding abstraction and local `sentence-transformers` concrete provider are implemented.
 - No embedding model is configured as a project-wide default yet.
-- Vector storage, document indexing, retrieval, conversation model, chat endpoint, and RAG implementation do not exist yet.
+- A provider-independent vector-store abstraction exists in `backend/app/services/vector_store/base.py`.
+- A local persistent Chroma vector-store implementation exists in `backend/app/services/vector_store/chroma.py`.
+- The Chroma backend uses `chromadb==1.5.9` and stores vectors, source text, and generic string metadata.
+- Vector queries return provider-independent `VectorQueryResult` objects.
+- Document indexing, retrieval workflows, conversation model, chat endpoint, and RAG implementation do not exist yet.
 - Test coverage currently consists of focused auth regression, document model/migration, document upload validation, and document upload endpoint checks rather than a comprehensive application test suite.
 - Authentication tests emit an `InsecureKeyLengthWarning` because the JWT HMAC key used in the test environment is shorter than the recommended 32 bytes. This was not changed as part of Task 4.
 
@@ -82,12 +86,14 @@
 - Task 10: Implement document text chunking for extracted document content — completed in commit `c7a1bb1` and pushed to `origin/main`.
 - Task 11 Batch 1: Add provider-independent embedding abstraction — completed in commit `2f02c3c` and pushed to `origin/main`.
 - Task 11 Batch 2: Implement local `sentence-transformers` embedding provider — completed and verified.
+- Task 11 Batch 3: Add vector-store abstraction and local persistent Chroma backend — completed and verified.
 
 ## Current Task
-- Task 11: Embeddings and Vector Storage Integration — concrete embedding provider completed.
+- Task 11: Embeddings and Vector Storage Integration is in progress.
 - Batch 1 introduced the provider-independent embedding abstraction.
 - Batch 2 implemented the local `sentence-transformers` concrete embedding provider.
-- Vector storage, document indexing, retrieval, and application integration are not implemented yet.
+- Batch 3 introduced the provider-independent vector-store abstraction and local persistent Chroma backend.
+- Document indexing, retrieval, and application integration are not implemented yet.
 
 ## Next Task
-- Task 11 — Batch 3: Integrate embeddings with vector storage after the vector-storage architecture is defined.
+- Next: Implement document indexing and connect chunks + embeddings to the vector store in a separate isolated batch.

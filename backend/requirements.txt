@@ -37,3 +37,4 @@ websockets==17.0.1
 pypdf==6.14.2
 python-docx==1.2.0
 sentence-transformers==5.6.1
+chromadb==1.5.9

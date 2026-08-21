@@ -30,14 +30,23 @@
 - PDF text extraction is implemented using `pypdf`.
 - DOCX text extraction is implemented using `python-docx`.
 - TXT text extraction is implemented using UTF-8 file reading.
+- Document text chunking is implemented in `backend/app/services/document_chunking.py`.
+- Chunking uses deterministic character-based chunks with configurable chunk size and overlap.
+- Invalid chunking configuration is rejected with `ValueError`.
+- Focused document chunking tests exist in `backend/tests/test_document_chunking.py`.
+- A provider-independent embedding abstraction exists in `backend/app/services/embeddings.py`.
+- The embedding abstraction defines single-text and ordered batch embedding contracts.
+- No concrete embedding provider has been selected or implemented yet.
+- Focused embedding abstraction tests exist in `backend/tests/test_embeddings.py`.
 
 ## In Progress
-- No implementation task is currently in progress after Task 9.
+- Task 11 — Embeddings and Vector Storage Integration is in progress.
+- Batch 1 introduces only the provider-independent embedding abstraction.
+- Concrete embedding provider selection and vector storage integration remain deferred.
 
 ## Planned
-- Add document file upload endpoints and storage flow.
-- Implement document text extraction and chunking using the parser abstraction.
-- Integrate embeddings and Chroma vector storage.
+- Integrate a concrete embedding provider once one is selected.
+- Add vector storage integration after the embedding provider architecture is established.
 - Add conversation model and chat endpoint with retrieval support.
 - Build frontend auth, dashboard, upload, and chat UI.
 - Add production-grade configuration, tests, and project documentation.
@@ -51,8 +60,9 @@
 - The project still does not implement the full roadmap beyond the auth foundation and document database foundation.
 - The frontend directory is empty.
 - The document upload flow now validates authenticated upload requests, stores files locally, persists document metadata, and removes stored files if database persistence fails.
-- Document parser abstraction, parser selection, and PDF, DOCX, and TXT text extraction are implemented, but document chunking does not yet exist.
-- Embeddings, vector storage, conversation model, chat endpoint, and RAG implementation do not exist yet.
+- Document parser abstraction, parser selection, PDF, DOCX, and TXT text extraction, and deterministic character-based document chunking are implemented.
+- A provider-independent embedding abstraction exists, but no concrete embedding provider has been selected or implemented.
+- Vector storage, conversation model, chat endpoint, and RAG implementation do not exist yet.
 - Test coverage currently consists of focused auth regression, document model/migration, document upload validation, and document upload endpoint checks rather than a comprehensive application test suite.
 - Authentication tests emit an `InsecureKeyLengthWarning` because the JWT HMAC key used in the test environment is shorter than the recommended 32 bytes. This was not changed as part of Task 4.
 
@@ -66,9 +76,12 @@
 - Task 7: Persist uploaded document metadata and connect the upload flow to the Document model — completed in commit `34aaf4a` and pushed to `origin/main`.
 - Task 8: Add document parser abstraction and parser selection — completed and verified.
 - Task 9: Implement document text extraction using the parser abstraction — completed and verified with real TXT, PDF, and DOCX files.
+- Task 10: Implement document text chunking for extracted document content — completed in commit `c7a1bb1` and pushed to `origin/main`.
 
 ## Current Task
-- No implementation task is currently in progress after Task 9.
+- Task 11: Embeddings and Vector Storage Integration — Batch 1.
+- Batch 1 adds only a provider-independent embedding abstraction and focused tests.
+- No concrete embedding provider, vector storage, Chroma integration, document indexing, retrieval, or upload-flow integration is included.
 
 ## Next Task
-- Task 10: Implement document text chunking for extracted document content.
+- Task 11 — Batch 2: Select and integrate a concrete embedding provider, subject to an explicit provider decision and repository architecture.

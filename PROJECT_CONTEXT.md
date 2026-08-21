@@ -96,12 +96,14 @@
 - Task 13 Batch 1: Add provider-independent retrieval service — completed and verified.
 - Task 13 Batch 2: Add authenticated retrieval API endpoint — completed and verified.
 - Task 14 Batch 1: Add provider-independent RAG context service — completed and verified.
+- Task 14 Batch 2: Add provider-independent LLM provider abstraction — completed and verified.
 
 ## Current Task
-- Task 14: Chat/RAG — Batch 1 completed and verified.
-- A provider-independent RAG service assembles deterministic context from the existing retrieval service.
-- The current RAG flow is query → retrieval → deterministic context assembly.
-- No LLM provider, chat endpoint, conversation persistence, or generation logic exists yet.
+- Task 14: Chat/RAG — Batch 2 completed and verified.
+- A provider-independent `LLMProvider` abstraction exists in `backend/app/services/llm/base.py`.
+- No concrete LLM provider is established or implemented; provider selection remains deferred.
+- The current RAG flow remains query → retrieval → deterministic context assembly.
+- RAG-to-LLM generation integration, chat endpoint, conversation persistence, and streaming do not exist yet.
 
 ## Next Task
-- Next: Select and integrate the LLM/provider layer in a separate batch without changing retrieval or RAG context assembly.
+- Next: Connect `RagService` to the chosen/provider-independent LLM boundary in a separate batch.

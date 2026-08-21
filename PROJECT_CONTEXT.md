@@ -23,13 +23,17 @@
 - Document storage paths are generated uniquely and scoped by document owner.
 - The storage service creates owner directories, writes uploaded files locally, prevents overwriting existing files, and removes partial files when a write operation fails.
 - Focused document storage tests exist in `backend/tests/test_document_storage.py`.
+- Document parser abstraction exists in `backend/app/services/document_parsers/base.py`.
+- Parser selection exists for PDF, DOCX, and TXT document types.
+- Unsupported document types are rejected by the parser selector.
+- Focused document parser abstraction and selection tests exist in `backend/tests/test_document_parsers.py`.
 
 ## In Progress
-- No implementation task is currently in progress after Task 7.
+- No implementation task is currently in progress after Task 8.
 
 ## Planned
 - Add document file upload endpoints and storage flow.
-- Add document parsing and chunking.
+- Implement document text extraction and chunking using the parser abstraction.
 - Integrate embeddings and Chroma vector storage.
 - Add conversation model and chat endpoint with retrieval support.
 - Build frontend auth, dashboard, upload, and chat UI.
@@ -44,7 +48,8 @@
 - The project still does not implement the full roadmap beyond the auth foundation and document database foundation.
 - The frontend directory is empty.
 - The document upload flow now validates authenticated upload requests, stores files locally, persists document metadata, and removes stored files if database persistence fails.
-- Parsing, chunking, embeddings, vector storage, conversation model, chat endpoint, and RAG implementation do not exist yet.
+- Document parser abstraction and parser selection exist, but actual PDF, DOCX, and TXT text extraction and chunking do not yet exist.
+- Embeddings, vector storage, conversation model, chat endpoint, and RAG implementation do not exist yet.
 - Test coverage currently consists of focused auth regression, document model/migration, document upload validation, and document upload endpoint checks rather than a comprehensive application test suite.
 - Authentication tests emit an `InsecureKeyLengthWarning` because the JWT HMAC key used in the test environment is shorter than the recommended 32 bytes. This was not changed as part of Task 4.
 
@@ -55,9 +60,11 @@
 - Task 4: Add document upload request validation — completed in commit `3b8bdf6` and pushed to `origin/main`.
 - Task 5: Add document upload endpoint skeleton — completed locally and verified with focused and full test suites.
 - Task 6: Add local document storage service — completed and committed.
+- Task 7: Persist uploaded document metadata and connect the upload flow to the Document model — completed in commit `34aaf4a` and pushed to `origin/main`.
+- Task 8: Add document parser abstraction and parser selection — completed and verified.
 
 ## Current Task
-- Task 7: Persist uploaded document metadata and connect the upload flow to the Document model — completed and verified.
+- No implementation task is currently in progress after Task 8.
 
 ## Next Task
-- Task 7: Persist uploaded document metadata and connect the upload flow to the Document model.
+- Task 9: Implement document text extraction using the parser abstraction.

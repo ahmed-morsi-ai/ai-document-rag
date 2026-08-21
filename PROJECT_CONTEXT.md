@@ -34,10 +34,12 @@
 - Chunking uses deterministic character-based chunks with configurable chunk size and overlap.
 - Invalid chunking configuration is rejected with `ValueError`.
 - Focused document chunking tests exist in `backend/tests/test_document_chunking.py`.
-- A provider-independent embedding abstraction exists in `backend/app/services/embeddings.py`.
+- A provider-independent embedding abstraction exists in `backend/app/services/embeddings/base.py`.
 - The embedding abstraction defines single-text and ordered batch embedding contracts.
-- No concrete embedding provider has been selected or implemented yet.
+- A local `sentence-transformers` embedding provider is implemented in `backend/app/services/embeddings/sentence_transformer.py`.
+- The concrete provider accepts an explicit model name and does not define a default model or provider configuration yet.
 - Focused embedding abstraction tests exist in `backend/tests/test_embeddings.py`.
+- Focused sentence-transformers provider tests exist in `backend/tests/test_sentence_transformer_embeddings.py`.
 
 ## In Progress
 - Task 11 — Embeddings and Vector Storage Integration is in progress.
@@ -61,8 +63,9 @@
 - The frontend directory is empty.
 - The document upload flow now validates authenticated upload requests, stores files locally, persists document metadata, and removes stored files if database persistence fails.
 - Document parser abstraction, parser selection, PDF, DOCX, and TXT text extraction, and deterministic character-based document chunking are implemented.
-- A provider-independent embedding abstraction exists, but no concrete embedding provider has been selected or implemented.
-- Vector storage, conversation model, chat endpoint, and RAG implementation do not exist yet.
+- A provider-independent embedding abstraction and local `sentence-transformers` concrete provider are implemented.
+- No embedding model is configured as a project-wide default yet.
+- Vector storage, document indexing, retrieval, conversation model, chat endpoint, and RAG implementation do not exist yet.
 - Test coverage currently consists of focused auth regression, document model/migration, document upload validation, and document upload endpoint checks rather than a comprehensive application test suite.
 - Authentication tests emit an `InsecureKeyLengthWarning` because the JWT HMAC key used in the test environment is shorter than the recommended 32 bytes. This was not changed as part of Task 4.
 
@@ -77,11 +80,14 @@
 - Task 8: Add document parser abstraction and parser selection — completed and verified.
 - Task 9: Implement document text extraction using the parser abstraction — completed and verified with real TXT, PDF, and DOCX files.
 - Task 10: Implement document text chunking for extracted document content — completed in commit `c7a1bb1` and pushed to `origin/main`.
+- Task 11 Batch 1: Add provider-independent embedding abstraction — completed in commit `2f02c3c` and pushed to `origin/main`.
+- Task 11 Batch 2: Implement local `sentence-transformers` embedding provider — completed and verified.
 
 ## Current Task
-- Task 11: Embeddings and Vector Storage Integration — Batch 1.
-- Batch 1 adds only a provider-independent embedding abstraction and focused tests.
-- No concrete embedding provider, vector storage, Chroma integration, document indexing, retrieval, or upload-flow integration is included.
+- Task 11: Embeddings and Vector Storage Integration — concrete embedding provider completed.
+- Batch 1 introduced the provider-independent embedding abstraction.
+- Batch 2 implemented the local `sentence-transformers` concrete embedding provider.
+- Vector storage, document indexing, retrieval, and application integration are not implemented yet.
 
 ## Next Task
-- Task 11 — Batch 2: Select and integrate a concrete embedding provider, subject to an explicit provider decision and repository architecture.
+- Task 11 — Batch 3: Integrate embeddings with vector storage after the vector-storage architecture is defined.

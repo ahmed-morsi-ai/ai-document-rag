@@ -26,10 +26,13 @@
 - Document parser abstraction exists in `backend/app/services/document_parsers/base.py`.
 - Parser selection exists for PDF, DOCX, and TXT document types.
 - Unsupported document types are rejected by the parser selector.
-- Focused document parser abstraction and selection tests exist in `backend/tests/test_document_parsers.py`.
+- Focused document parser abstraction, selection, and real-file text extraction tests exist in `backend/tests/test_document_parsers.py`.
+- PDF text extraction is implemented using `pypdf`.
+- DOCX text extraction is implemented using `python-docx`.
+- TXT text extraction is implemented using UTF-8 file reading.
 
 ## In Progress
-- No implementation task is currently in progress after Task 8.
+- No implementation task is currently in progress after Task 9.
 
 ## Planned
 - Add document file upload endpoints and storage flow.
@@ -48,7 +51,7 @@
 - The project still does not implement the full roadmap beyond the auth foundation and document database foundation.
 - The frontend directory is empty.
 - The document upload flow now validates authenticated upload requests, stores files locally, persists document metadata, and removes stored files if database persistence fails.
-- Document parser abstraction and parser selection exist, but actual PDF, DOCX, and TXT text extraction and chunking do not yet exist.
+- Document parser abstraction, parser selection, and PDF, DOCX, and TXT text extraction are implemented, but document chunking does not yet exist.
 - Embeddings, vector storage, conversation model, chat endpoint, and RAG implementation do not exist yet.
 - Test coverage currently consists of focused auth regression, document model/migration, document upload validation, and document upload endpoint checks rather than a comprehensive application test suite.
 - Authentication tests emit an `InsecureKeyLengthWarning` because the JWT HMAC key used in the test environment is shorter than the recommended 32 bytes. This was not changed as part of Task 4.
@@ -62,9 +65,10 @@
 - Task 6: Add local document storage service — completed and committed.
 - Task 7: Persist uploaded document metadata and connect the upload flow to the Document model — completed in commit `34aaf4a` and pushed to `origin/main`.
 - Task 8: Add document parser abstraction and parser selection — completed and verified.
+- Task 9: Implement document text extraction using the parser abstraction — completed and verified with real TXT, PDF, and DOCX files.
 
 ## Current Task
-- No implementation task is currently in progress after Task 8.
+- No implementation task is currently in progress after Task 9.
 
 ## Next Task
-- Task 9: Implement document text extraction using the parser abstraction.
+- Task 10: Implement document text chunking for extracted document content.

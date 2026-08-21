@@ -98,13 +98,14 @@
 - Task 14 Batch 1: Add provider-independent RAG context service — completed and verified.
 - Task 14 Batch 2: Add provider-independent LLM provider abstraction — completed and verified.
 - Task 14 Batch 3: Connect `RagService` to the `LLMProvider` boundary — completed and verified.
+- Task 14 Batch 4: Implement concrete local Ollama LLM provider — completed and verified.
 
 ## Current Task
-- Task 14: Chat/RAG — Batch 3 completed and verified.
-- `RagService` can optionally use the provider-independent `LLMProvider` abstraction to generate a plain-text answer from retrieved RAG context.
-- `build_context()` remains backward compatible and continues to provide deterministic retrieval context.
-- No concrete LLM provider is established or implemented; provider selection remains deferred.
-- No Chat API, conversation persistence, streaming, or concrete LLM SDK exists yet.
+- Task 14: Chat/RAG — Batch 4 completed and verified.
+- `OllamaLLMProvider` implements the existing provider-independent `LLMProvider` abstraction.
+- Ollama is configured through `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, and `OLLAMA_TIMEOUT_SECONDS`.
+- The Ollama integration uses `httpx` and returns plain generated text only.
+- No Chat API, conversation persistence, streaming, or application-level provider wiring exists yet.
 
 ## Next Task
-- Next: Select and implement a concrete LLM provider in a separate isolated batch.
+- Next: Wire the concrete Ollama provider into the application Chat/RAG flow in a separate batch.

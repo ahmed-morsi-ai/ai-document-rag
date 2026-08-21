@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
     VECTOR_STORE_DIR: Path = Path("vector_store")
     VECTOR_COLLECTION_NAME: str = "document_chunks"
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "gemma4"
+    OLLAMA_TIMEOUT_SECONDS: float = 120.0
 
     model_config = SettingsConfigDict(
         env_file="../.env",

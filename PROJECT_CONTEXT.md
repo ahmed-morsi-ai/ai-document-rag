@@ -99,13 +99,14 @@
 - Task 14 Batch 2: Add provider-independent LLM provider abstraction — completed and verified.
 - Task 14 Batch 3: Connect `RagService` to the `LLMProvider` boundary — completed and verified.
 - Task 14 Batch 4: Implement concrete local Ollama LLM provider — completed and verified.
+- Task 14 Batch 5: Wire Ollama provider into application-level `RagService` — completed and verified.
 
 ## Current Task
-- Task 14: Chat/RAG — Batch 4 completed and verified.
-- `OllamaLLMProvider` implements the existing provider-independent `LLMProvider` abstraction.
-- Ollama is configured through `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, and `OLLAMA_TIMEOUT_SECONDS`.
-- The Ollama integration uses `httpx` and returns plain generated text only.
-- No Chat API, conversation persistence, streaming, or application-level provider wiring exists yet.
+- Task 14: Chat/RAG — Batch 5 completed and verified.
+- Application-level wiring constructs `OllamaLLMProvider` from the existing application settings.
+- `get_rag_service()` injects the existing `Retriever` and the provider through the `LLMProvider` abstraction.
+- `RagService` remains provider-independent and does not construct or import Ollama directly.
+- No Chat API, conversation persistence, or streaming exists yet.
 
 ## Next Task
-- Next: Wire the concrete Ollama provider into the application Chat/RAG flow in a separate batch.
+- Next: Implement the Chat API integration using the existing application-level `RagService` dependency.

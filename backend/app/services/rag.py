@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from app.services.llm.base import LLMProvider
 from app.services.retrieval import RetrievalResult, Retriever
 
 
@@ -10,14 +11,23 @@ class RagContext:
     sources: list[RetrievalResult]
 
 
+@dataclass(frozen=True)
+class RagResponse:
+    query: str
+    answer: str
+    context: RagContext
+
+
 class RagService:
-    """Build deterministic RAG context from retrieved document chunks."""
+    """Build RAG context and optionally generate an answer."""
 
     def __init__(
         self,
         retriever: Retriever,
+        llm_provider: LLMProvider | None = None,
     ) -> None:
         self.retriever = retriever
+        self.llm_provider = llm_provider
 
     def build_context(
         self,
@@ -38,4 +48,30 @@ class RagService:
             query=query,
             context=context,
             sources=list(results),
+        )
+
+    def generate_answer(
+        self,
+        query: str,
+        top_k: int = 5,
+    ) -> RagResponse:
+        if self.llm_provider is None:
+            raise ValueError("LLM provider is required")
+
+        context = self.build_context(
+            query=query,
+            top_k=top_k,
+        )
+
+        prompt = (
+            f"Question:\n{query}\n\n"
+            f"Context:\n{context.context}"
+        )
+
+        answer = self.llm_provider.generate(prompt)
+
+        return RagResponse(
+            query=query,
+            answer=answer,
+            context=context,
         )

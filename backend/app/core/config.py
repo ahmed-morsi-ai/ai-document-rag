@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     DOCUMENT_STORAGE_DIR: Path = Path("storage")
+    EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+    VECTOR_STORE_DIR: Path = Path("vector_store")
+    VECTOR_COLLECTION_NAME: str = "document_chunks"
 
     model_config = SettingsConfigDict(
         env_file="../.env",

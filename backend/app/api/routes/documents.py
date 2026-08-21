@@ -12,9 +12,11 @@ from app.db.database import get_db
 from app.db.models import Document, User
 from app.services.document_storage import (
     delete_document,
+    get_storage_root,
     store_document,
 )
 from app.services.document_validation import validate_document_upload
+from app.services.document_indexing_factory import get_document_indexer
 
 
 router = APIRouter(
@@ -54,5 +56,13 @@ async def upload_document(
         await db.rollback()
         delete_document(storage_path)
         raise
+
+    indexer = get_document_indexer()
+    indexer.index_document(
+        document_id=str(document.id),
+        file_path=(
+            get_storage_root() / document.storage_path
+        ),
+    )
 
     return document

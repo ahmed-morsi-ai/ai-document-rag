@@ -44,8 +44,9 @@
 ## In Progress
 - Task 11 — Embeddings and Vector Storage Integration is in progress.
 - Task 12 — Document Indexing is in progress.
-- Task 12 Batch 1 introduces the document indexing orchestration service.
-- The indexing flow is parser → chunker → embedding provider → vector store.
+- Task 12 Batch 1 introduced the document indexing orchestration service.
+- Task 12 Batch 2 integrates synchronous document indexing into the successful upload flow.
+- The upload flow is validation → storage → document persistence → indexing.
 
 ## Planned
 - Implement retrieval workflows on top of the vector-store query contract.
@@ -70,6 +71,8 @@
 - The Chroma backend uses `chromadb==1.5.9` and stores vectors, source text, and generic string metadata.
 - Vector queries return provider-independent `VectorQueryResult` objects.
 - Document indexing orchestration is implemented in `backend/app/services/document_indexing.py`.
+- Successful document uploads invoke indexing after file storage and document metadata persistence succeed.
+- Indexing failures propagate to the upload caller rather than being silently ignored.
 - Retrieval workflows, conversation model, chat endpoint, and RAG implementation do not exist yet.
 - Test coverage currently consists of focused auth regression, document model/migration, document upload validation, and document upload endpoint checks rather than a comprehensive application test suite.
 - Authentication tests emit an `InsecureKeyLengthWarning` because the JWT HMAC key used in the test environment is shorter than the recommended 32 bytes. This was not changed as part of Task 4.
@@ -88,11 +91,13 @@
 - Task 11 Batch 1: Add provider-independent embedding abstraction — completed in commit `2f02c3c` and pushed to `origin/main`.
 - Task 11 Batch 2: Implement local `sentence-transformers` embedding provider — completed and verified.
 - Task 11 Batch 3: Add vector-store abstraction and local persistent Chroma backend — completed and verified.
+- Task 12 Batch 1: Add document indexing orchestration service — completed in commit `f1563c7` and verified.
+- Task 12 Batch 2: Integrate document indexing with document upload — completed and verified.
 
 ## Current Task
-- Task 12: Document Indexing — Batch 1.
-- The indexing service orchestrates parser selection, text extraction, chunking, embedding, and vector storage.
-- Retrieval and upload integration are not implemented in this batch.
+- Task 12: Document Indexing — Batch 2 completed and verified.
+- The existing document upload flow now performs synchronous indexing after successful file storage and document metadata persistence.
+- Retrieval is not implemented yet.
 
 ## Next Task
 - Next: Implement retrieval as a separate isolated batch without changing the indexing orchestration.

@@ -47,3 +47,5 @@ __pycache__/
 
 # OS
 .DS_Store
+
+vector_store/

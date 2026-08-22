@@ -101,12 +101,13 @@
 - Task 14 Batch 4: Implement concrete local Ollama LLM provider — completed and verified.
 - Task 14 Batch 5: Wire Ollama provider into application-level `RagService` — completed and verified.
 - Task 15: Add application-level `ChatService` — completed and verified.
+- Task 16: Add authenticated `POST /chat` Chat API endpoint — completed and verified.
 
 ## Current Task
-- Task 15: Chat Application Service — completed and verified.
-- `ChatService` coordinates user queries through the existing `RagService`.
-- `ChatService` returns a small provider-independent `ChatResponse`.
-- Chat API, authentication at the chat layer, conversation persistence, message persistence, and streaming are not implemented yet.
+- Task 16: Chat API Endpoint — completed and verified.
+- `POST /chat` exposes the existing `ChatService` through an authenticated FastAPI boundary.
+- The endpoint validates `query` and `top_k` and returns provider-independent `query` and `answer` fields.
+- The chat endpoint is stateless; conversation persistence, message persistence, history, and streaming are not implemented.
 
 ## Next Task
-- Next: Implement the Chat API endpoint over the existing `ChatService` without persistence.
+- Next: Implement the Conversation persistence model and Alembic migration.

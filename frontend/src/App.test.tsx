@@ -6,6 +6,14 @@ import App from "./App";
 import { TOKEN_STORAGE_KEY } from "./auth/AuthContext";
 
 const meMock = vi.fn();
+const listDocumentsMock = vi.fn();
+
+vi.mock("./services/documents", () => ({
+  documentsApi: {
+    list: (...args: unknown[]) => listDocumentsMock(...args),
+    upload: vi.fn(),
+  },
+}));
 
 vi.mock("./services/api", () => ({
   authApi: {
@@ -27,6 +35,7 @@ describe("frontend authentication foundation", () => {
   beforeEach(() => {
     localStorage.clear();
     meMock.mockReset();
+    listDocumentsMock.mockReset();
   });
 
   it("redirects the root route to login", async () => {
@@ -74,6 +83,8 @@ describe("frontend authentication foundation", () => {
       is_active: true,
     });
 
+    listDocumentsMock.mockResolvedValue([]);
+
     render(
       <MemoryRouter initialEntries={["/app"]}>
         <App />
@@ -83,7 +94,7 @@ describe("frontend authentication foundation", () => {
     await waitFor(() => {
       expect(
         screen.getByRole("heading", {
-          name: "Authenticated application shell",
+          name: "Dashboard",
         }),
       ).toBeInTheDocument();
     });

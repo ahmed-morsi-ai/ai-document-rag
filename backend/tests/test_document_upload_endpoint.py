@@ -1,5 +1,6 @@
 import os
 import unittest
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from unittest import mock
@@ -376,3 +377,127 @@ class DocumentUploadEndpointTests(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class DocumentListEndpointTests(unittest.TestCase):
+    def setUp(self):
+        self.owner_id = uuid4()
+        self.user = mock.Mock(
+            id=self.owner_id,
+            is_active=True,
+        )
+
+        self.mock_db = mock.Mock()
+        self.mock_db.execute = mock.AsyncMock()
+
+        app.dependency_overrides[get_current_user] = (
+            lambda: self.user
+        )
+
+        async def override_get_db():
+            yield self.mock_db
+
+        app.dependency_overrides[get_db] = override_get_db
+        self.client = TestClient(app)
+
+    def tearDown(self):
+        app.dependency_overrides.clear()
+
+    def test_requires_authentication(self):
+        app.dependency_overrides.clear()
+
+        response = self.client.get("/documents")
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_returns_owned_documents(self):
+        older = Document(
+            id=uuid4(),
+            owner_id=self.owner_id,
+            original_filename="older.pdf",
+            mime_type="application/pdf",
+            storage_path="owned/older.pdf",
+            processing_status="uploaded",
+            created_at=datetime(
+                2026,
+                8,
+                22,
+                20,
+                0,
+                tzinfo=timezone.utc,
+            ),
+            updated_at=datetime(
+                2026,
+                8,
+                22,
+                20,
+                0,
+                tzinfo=timezone.utc,
+            ),
+        )
+        newer = Document(
+            id=uuid4(),
+            owner_id=self.owner_id,
+            original_filename="newer.pdf",
+            mime_type="application/pdf",
+            storage_path="owned/newer.pdf",
+            processing_status="uploaded",
+            created_at=datetime(
+                2026,
+                8,
+                22,
+                21,
+                0,
+                tzinfo=timezone.utc,
+            ),
+            updated_at=datetime(
+                2026,
+                8,
+                22,
+                21,
+                0,
+                tzinfo=timezone.utc,
+            ),
+        )
+
+        scalars = mock.Mock()
+        scalars.all.return_value = [newer, older]
+
+        self.mock_db.execute.return_value = mock.Mock(
+            scalars=lambda: scalars,
+        )
+
+        response = self.client.get("/documents")
+
+        self.assertEqual(response.status_code, 200)
+
+        body = response.json()
+
+        self.assertEqual(
+            len(body),
+            2,
+        )
+        self.assertEqual(
+            body[0]["original_filename"],
+            "newer.pdf",
+        )
+        self.assertNotIn(
+            "owner_id",
+            body[0],
+        )
+        self.assertNotIn(
+            "storage_path",
+            body[0],
+        )
+
+    def test_empty_document_list_returns_empty_collection(self):
+        scalars = mock.Mock()
+        scalars.all.return_value = []
+
+        self.mock_db.execute.return_value = mock.Mock(
+            scalars=lambda: scalars,
+        )
+
+        response = self.client.get("/documents")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [])

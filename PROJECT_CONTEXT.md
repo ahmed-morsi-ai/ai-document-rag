@@ -108,14 +108,14 @@
 - Task 20: Persist chat interactions through `ChatService` — completed and verified.
 - Task 21: Add authenticated conversation history endpoints — completed and verified.
 - Task 22: Add frontend foundation and authentication — completed and verified.
+- Task 23: Add dashboard and document upload — completed and verified.
 
 ## Current Task
-- Task 22: Frontend Foundation + Authentication — completed and verified.
-- The frontend uses React + TypeScript + Vite with React Router.
-- Authentication uses the existing `/auth/register`, `/auth/login`, and `/auth/me` backend contract.
-- Access tokens are persisted locally and restored through the existing authenticated-user endpoint.
-- Protected application routing and logout are implemented.
-- Dashboard, document upload UI, chat UI, conversation history UI, and streaming are not implemented yet.
+- Task 23: Dashboard + Document Upload — completed and verified.
+- The authenticated `/app` route now exposes the document dashboard.
+- The frontend can list the authenticated user's documents and upload PDF, DOCX, and TXT files through the existing document API.
+- Upload, loading, success, validation, and failure states are handled in the frontend.
+- No chat UI, conversation history UI, search UI, or streaming is implemented yet.
 
 ## Next Task
-- Next: Implement the first frontend product workflow on top of the authenticated application shell.
+- Next: Implement the frontend chat workflow on top of the existing authenticated Chat API.

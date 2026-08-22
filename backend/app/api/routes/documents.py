@@ -5,6 +5,7 @@ from fastapi import (
     UploadFile,
     status,
 )
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import get_current_user
@@ -17,12 +18,36 @@ from app.services.document_storage import (
 )
 from app.services.document_validation import validate_document_upload
 from app.services.document_indexing_factory import get_document_indexer
+from app.schemas.documents import DocumentResponse
 
 
 router = APIRouter(
     prefix="/documents",
     tags=["documents"],
 )
+
+
+@router.get(
+    "",
+    response_model=list[DocumentResponse],
+)
+async def list_documents(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Document)
+        .where(
+            Document.owner_id == current_user.id,
+        )
+        .order_by(
+            Document.created_at.desc(),
+            Document.id.desc(),
+        )
+    )
+
+    return list(result.scalars().all())
+
 
 
 @router.post(

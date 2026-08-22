@@ -104,13 +104,14 @@
 - Task 16: Add authenticated `POST /chat` Chat API endpoint — completed and verified.
 - Task 17: Add Conversation persistence model and Alembic migration — completed and verified.
 - Task 18: Add Message persistence model and Alembic migration — completed and verified.
+- Task 19: Add Chat Persistence Service for conversations and messages — completed and verified.
 
 ## Current Task
-- Task 18: Message Persistence Model — completed and verified.
-- `Message` belongs to an existing `Conversation` through the `conversation_id` foreign key.
-- Message roles are constrained to `user` and `assistant`.
-- Message ordering is explicit through `sequence_number`, unique within each conversation and exposed in relationship order.
-- Chat persistence integration, conversation persistence services, and history APIs are not implemented.
+- Task 19: Chat Persistence Service — completed and verified.
+- `ChatPersistenceService` uses the existing async `AsyncSession` infrastructure.
+- Conversation ownership is enforced through the service boundary.
+- Messages are persisted and retrieved in deterministic `sequence_number` order.
+- ChatService persistence integration and conversation history APIs are not implemented.
 
 ## Next Task
-- Next: Implement the Chat Persistence Service for conversations and messages.
+- Next: Integrate Chat Persistence Service into `ChatService`.

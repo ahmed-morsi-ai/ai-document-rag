@@ -102,12 +102,15 @@
 - Task 14 Batch 5: Wire Ollama provider into application-level `RagService` — completed and verified.
 - Task 15: Add application-level `ChatService` — completed and verified.
 - Task 16: Add authenticated `POST /chat` Chat API endpoint — completed and verified.
+- Task 17: Add Conversation persistence model and Alembic migration — completed and verified.
+- Task 18: Add Message persistence model and Alembic migration — completed and verified.
 
 ## Current Task
-- Task 17: Conversation Persistence Model — implementation in progress.
-- `Conversation` belongs to an existing `User` through the `owner_id` foreign key.
-- The Conversation schema contains only identity, ownership, and lifecycle timestamps.
-- Message persistence, ChatService persistence integration, and chat history are not implemented.
+- Task 18: Message Persistence Model — completed and verified.
+- `Message` belongs to an existing `Conversation` through the `conversation_id` foreign key.
+- Message roles are constrained to `user` and `assistant`.
+- Message ordering is explicit through `sequence_number`, unique within each conversation and exposed in relationship order.
+- Chat persistence integration, conversation persistence services, and history APIs are not implemented.
 
 ## Next Task
-- Next: Implement the Message persistence model and conversation relationship.
+- Next: Implement the Chat Persistence Service for conversations and messages.

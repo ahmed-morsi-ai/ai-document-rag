@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Conversation, Message
@@ -73,6 +73,29 @@ class ChatPersistenceService:
         await self.db.refresh(message)
 
         return message
+
+    async def get_next_sequence_number(
+        self,
+        owner_id: UUID,
+        conversation_id: UUID,
+    ) -> int:
+        await self.get_conversation(
+            owner_id=owner_id,
+            conversation_id=conversation_id,
+        )
+
+        result = await self.db.execute(
+            select(
+                func.coalesce(
+                    func.max(Message.sequence_number),
+                    0,
+                )
+            ).where(
+                Message.conversation_id == conversation_id,
+            )
+        )
+
+        return int(result.scalar_one()) + 1
 
     async def get_messages(
         self,

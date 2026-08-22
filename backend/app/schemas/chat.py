@@ -1,9 +1,12 @@
+from uuid import UUID
+
 from pydantic import BaseModel, Field, field_validator
 
 
 class ChatRequest(BaseModel):
     query: str = Field(min_length=1)
     top_k: int = Field(default=5, gt=0)
+    conversation_id: UUID | None = None
 
     @field_validator("query")
     @classmethod

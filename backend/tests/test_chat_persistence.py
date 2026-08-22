@@ -225,6 +225,80 @@ class ChatPersistenceServiceTests(unittest.IsolatedAsyncioTestCase):
         self.db.add.assert_not_called()
         self.db.commit.assert_not_awaited()
 
+    async def test_get_next_sequence_number_starts_at_one(self):
+        from uuid import UUID
+
+        owner_id = UUID(
+            "11111111-1111-4111-8111-111111111111"
+        )
+        conversation_id = UUID(
+            "22222222-2222-4222-8222-222222222222"
+        )
+
+        conversation = Conversation(
+            id=conversation_id,
+            owner_id=owner_id,
+        )
+
+        scalar = Mock()
+        scalar.scalar_one.return_value = 0
+
+        self.db.execute = AsyncMock(
+            side_effect=[
+                AsyncScalarResult(conversation),
+                scalar,
+            ],
+        )
+
+        result = (
+            await self.service.get_next_sequence_number(
+                owner_id=owner_id,
+                conversation_id=conversation_id,
+            )
+        )
+
+        self.assertEqual(
+            result,
+            1,
+        )
+
+    async def test_get_next_sequence_number_follows_existing_messages(self):
+        from uuid import UUID
+
+        owner_id = UUID(
+            "11111111-1111-4111-8111-111111111111"
+        )
+        conversation_id = UUID(
+            "22222222-2222-4222-8222-222222222222"
+        )
+
+        conversation = Conversation(
+            id=conversation_id,
+            owner_id=owner_id,
+        )
+
+        scalar = Mock()
+        scalar.scalar_one.return_value = 4
+
+        self.db.execute = AsyncMock(
+            side_effect=[
+                AsyncScalarResult(conversation),
+                scalar,
+            ],
+        )
+
+        result = (
+            await self.service.get_next_sequence_number(
+                owner_id=owner_id,
+                conversation_id=conversation_id,
+            )
+        )
+
+        self.assertEqual(
+            result,
+            5,
+        )
+
     async def test_get_messages_returns_deterministic_sequence_order(self):
         from uuid import UUID
 

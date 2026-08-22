@@ -1,6 +1,7 @@
 import os
 import unittest
 from unittest import mock
+from unittest.mock import AsyncMock
 
 os.environ.setdefault(
     "DATABASE_URL",
@@ -28,9 +29,11 @@ class ChatEndpointTests(unittest.TestCase):
         )
 
         self.fake_chat_service = mock.Mock()
-        self.fake_chat_service.chat.return_value = ChatResponse(
-            query="hello",
-            answer="hello answer",
+        self.fake_chat_service.chat = AsyncMock(
+            return_value=ChatResponse(
+                query="hello",
+                answer="hello answer",
+            )
         )
 
         async def override_current_user():
@@ -115,9 +118,54 @@ class ChatEndpointTests(unittest.TestCase):
         )
 
         self.fake_chat_service.chat.assert_called_once_with(
+            user_id=self.fake_user.id,
             query="  preserve whitespace  ",
             top_k=7,
+            conversation_id=None,
         )
+
+    def test_conversation_id_is_forwarded_to_chat_service(self):
+        conversation_id = (
+            "22222222-2222-4222-8222-222222222222"
+        )
+
+        response = self.client.post(
+            "/chat",
+            json={
+                "query": "continue",
+                "conversation_id": conversation_id,
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        from uuid import UUID
+
+        self.fake_chat_service.chat.assert_called_once_with(
+            user_id=self.fake_user.id,
+            query="continue",
+            top_k=5,
+            conversation_id=UUID(conversation_id),
+        )
+
+    def test_invalid_conversation_id_is_rejected(self):
+        response = self.client.post(
+            "/chat",
+            json={
+                "query": "hello",
+                "conversation_id": "not-a-uuid",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            422,
+        )
+
+        self.fake_chat_service.chat.assert_not_called()
 
     def test_response_is_provider_independent(self):
         response = self.client.post(

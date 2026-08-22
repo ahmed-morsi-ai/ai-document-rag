@@ -22,9 +22,11 @@ async def chat(
     current_user: User = Depends(get_current_user),
     chat_service: ChatService = Depends(get_chat_service),
 ):
-    response = chat_service.chat(
+    response = await chat_service.chat(
+        user_id=current_user.id,
         query=request.query,
         top_k=request.top_k,
+        conversation_id=request.conversation_id,
     )
 
     return ChatResponse(

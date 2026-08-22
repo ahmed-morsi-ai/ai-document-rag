@@ -105,13 +105,16 @@
 - Task 17: Add Conversation persistence model and Alembic migration — completed and verified.
 - Task 18: Add Message persistence model and Alembic migration — completed and verified.
 - Task 19: Add Chat Persistence Service for conversations and messages — completed and verified.
+- Task 20: Persist chat interactions through `ChatService` — completed and verified.
 
 ## Current Task
-- Task 19: Chat Persistence Service — completed and verified.
-- `ChatPersistenceService` uses the existing async `AsyncSession` infrastructure.
-- Conversation ownership is enforced through the service boundary.
-- Messages are persisted and retrieved in deterministic `sequence_number` order.
-- ChatService persistence integration and conversation history APIs are not implemented.
+- Task 20: Persist Chat Interactions — completed and verified.
+- `ChatService` now coordinates `RagService` and `ChatPersistenceService`.
+- `/chat` accepts an optional `conversation_id`; omitted means create a new conversation.
+- Existing conversations are ownership-validated through `ChatPersistenceService`.
+- User messages are persisted before RAG generation; assistant messages are persisted only after successful generation.
+- The existing persistence layer commits each write independently; therefore a later RAG or assistant-persistence failure does not silently report chat success.
+- Conversation/history listing APIs, frontend history UI, and streaming are not implemented.
 
 ## Next Task
-- Next: Integrate Chat Persistence Service into `ChatService`.
+- Next: Implement Conversation History API endpoints.

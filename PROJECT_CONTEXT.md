@@ -111,11 +111,20 @@
 - Task 23: Add dashboard and document upload — completed and verified.
 
 ## Current Task
-- Task 23: Dashboard + Document Upload — completed and verified.
-- The authenticated `/app` route now exposes the document dashboard.
-- The frontend can list the authenticated user's documents and upload PDF, DOCX, and TXT files through the existing document API.
-- Upload, loading, success, validation, and failure states are handled in the frontend.
-- No chat UI, conversation history UI, search UI, or streaming is implemented yet.
+- Task 24 Batch 1: Chat conversation UI read/state foundation — implemented and verified.
+- Task 22 remains closed: frontend authentication and protected routing are preserved.
+- Task 23 remains closed: dashboard and document upload are preserved.
+- The protected `/app/chat` route exposes the Chat page.
+- The Chat page loads the authenticated user's conversations through `GET /conversations`.
+- Selecting a conversation loads persisted messages through `GET /conversations/{conversation_id}/messages`.
+- Server-provided message ordering is preserved without client-side sorting.
+- Conversation list and history support loading, empty, and error states.
+- New conversation clears the active conversation ID and visible history without creating a backend conversation.
+- A disabled placeholder composer is present.
+- `POST /chat` message sending is not implemented yet and is reserved for Task 24 Batch 2.
+- Streaming is not implemented.
 
 ## Next Task
-- Next: Implement the frontend chat workflow on top of the existing authenticated Chat API.
+- Next: Task 24 Batch 2 — integrate synchronous `POST /chat` message sending and conversation reconciliation.
+- Next: Task 24 Batch 2 — integrate synchronous `POST /chat` message sending and conversation reconciliation.
+- Next: Task 24 Batch 2 — integrate synchronous `POST /chat` message sending and conversation reconciliation.

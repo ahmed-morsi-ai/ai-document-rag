@@ -1,4 +1,9 @@
 import type {
+  ConversationHistoryResponse,
+  ConversationListResponse,
+} from "../types/conversations";
+
+import type {
   ApiErrorShape,
   AuthCredentials,
   TokenResponse,
@@ -80,5 +85,23 @@ export const authApi = {
 
   me(token: string) {
     return request<User>("/auth/me", {}, token);
+  },
+};
+
+
+export const conversationApi = {
+  getConversations(token: string) {
+    return request<ConversationListResponse>("/conversations", {}, token);
+  },
+
+  getConversationMessages(
+    token: string,
+    conversationId: string,
+  ) {
+    return request<ConversationHistoryResponse>(
+      `/conversations/${conversationId}/messages`,
+      {},
+      token,
+    );
   },
 };

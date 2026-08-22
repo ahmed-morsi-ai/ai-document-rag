@@ -109,3 +109,160 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+.chat-page {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.chat-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.chat-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 20px;
+}
+
+.chat-sidebar,
+.chat-main,
+.chat-history,
+.chat-composer {
+  border: 1px solid #d9dee7;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.chat-sidebar {
+  padding: 16px;
+}
+
+.chat-sidebar-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.chat-sidebar-header h2 {
+  margin: 0;
+}
+
+.conversation-list,
+.message-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conversation-list {
+  display: grid;
+  gap: 8px;
+}
+
+.conversation-item {
+  width: 100%;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conversation-item.active {
+  font-weight: 600;
+}
+
+.chat-main {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: minmax(320px, 1fr) auto;
+  gap: 16px;
+  padding: 16px;
+}
+
+.chat-history {
+  min-height: 320px;
+  padding: 20px;
+}
+
+.chat-empty-state {
+  min-height: 280px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+
+.message-list {
+  display: grid;
+  gap: 12px;
+}
+
+.message {
+  max-width: 80%;
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+
+.message-user {
+  margin-left: auto;
+  background: #eef4ff;
+}
+
+.message-assistant {
+  margin-right: auto;
+  background: #f4f5f7;
+}
+
+.message-role,
+.message-content {
+  margin: 0;
+}
+
+.message-role {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  margin-bottom: 4px;
+}
+
+.chat-composer {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}
+
+.chat-composer textarea {
+  width: 100%;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 900px) {
+  .chat-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .chat-sidebar {
+    order: 1;
+  }
+
+  .chat-main {
+    order: 2;
+  }
+}

@@ -29,6 +29,23 @@ class ChatPersistenceService:
 
         return conversation
 
+    async def get_conversations(
+        self,
+        owner_id: UUID,
+    ) -> list[Conversation]:
+        result = await self.db.execute(
+            select(Conversation)
+            .where(
+                Conversation.owner_id == owner_id,
+            )
+            .order_by(
+                Conversation.created_at.desc(),
+                Conversation.id.desc(),
+            )
+        )
+
+        return list(result.scalars().all())
+
     async def get_conversation(
         self,
         owner_id: UUID,

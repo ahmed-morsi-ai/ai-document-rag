@@ -8,6 +8,14 @@ from app.services.rag_factory import get_rag_service
 from app.services.retrieval_factory import get_retriever
 
 
+def get_chat_persistence_service(
+    db: AsyncSession = Depends(get_db),
+) -> ChatPersistenceService:
+    return ChatPersistenceService(
+        db=db,
+    )
+
+
 def get_chat_service(
     db: AsyncSession = Depends(get_db),
 ) -> ChatService:

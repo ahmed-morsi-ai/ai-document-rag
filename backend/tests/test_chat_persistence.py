@@ -64,6 +64,56 @@ class ChatPersistenceServiceTests(unittest.IsolatedAsyncioTestCase):
             persisted,
         )
 
+    async def test_get_conversations_returns_only_owner_conversations_in_deterministic_order(
+        self,
+    ):
+        from uuid import UUID
+
+        owner_id = UUID(
+            "11111111-1111-4111-8111-111111111111"
+        )
+
+        conversations = [
+            Conversation(owner_id=owner_id),
+            Conversation(owner_id=owner_id),
+        ]
+
+        self.db.execute = AsyncMock(
+            return_value=AsyncScalarsResult(
+                conversations,
+            ),
+        )
+
+        result = await self.service.get_conversations(
+            owner_id=owner_id,
+        )
+
+        self.assertEqual(
+            result,
+            conversations,
+        )
+        self.db.execute.assert_awaited_once()
+
+        statement = (
+            self.db.execute.await_args.args[0]
+        )
+        order_by_columns = statement._order_by_clauses
+
+        self.assertEqual(
+            len(order_by_columns),
+            2,
+        )
+        self.assertTrue(
+            order_by_columns[0].element.compare(
+                Conversation.__table__.c.created_at,
+            ),
+        )
+        self.assertTrue(
+            order_by_columns[1].element.compare(
+                Conversation.__table__.c.id,
+            ),
+        )
+
     async def test_get_conversation_returns_owned_conversation(self):
         from uuid import UUID
 

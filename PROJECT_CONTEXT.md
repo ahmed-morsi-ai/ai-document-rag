@@ -106,15 +106,14 @@
 - Task 18: Add Message persistence model and Alembic migration — completed and verified.
 - Task 19: Add Chat Persistence Service for conversations and messages — completed and verified.
 - Task 20: Persist chat interactions through `ChatService` — completed and verified.
+- Task 21: Add authenticated conversation history endpoints — completed and verified.
 
 ## Current Task
-- Task 20: Persist Chat Interactions — completed and verified.
-- `ChatService` now coordinates `RagService` and `ChatPersistenceService`.
-- `/chat` accepts an optional `conversation_id`; omitted means create a new conversation.
-- Existing conversations are ownership-validated through `ChatPersistenceService`.
-- User messages are persisted before RAG generation; assistant messages are persisted only after successful generation.
-- The existing persistence layer commits each write independently; therefore a later RAG or assistant-persistence failure does not silently report chat success.
-- Conversation/history listing APIs, frontend history UI, and streaming are not implemented.
+- Task 21: Conversation History API — implemented and verified.
+- `GET /conversations` returns only the authenticated user's conversations in deterministic order.
+- `GET /conversations/{conversation_id}/messages` returns ownership-validated conversation history in `sequence_number` order.
+- Both endpoints use the existing authentication dependency and `ChatPersistenceService`.
+- Frontend integration and streaming are not implemented.
 
 ## Next Task
-- Next: Implement Conversation History API endpoints.
+- Next: Frontend integration for authenticated chat and conversation history.

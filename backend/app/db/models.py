@@ -52,6 +52,42 @@ class User(Base):
         back_populates="owner",
     )
 
+    conversations: Mapped[list["Conversation"]] = relationship(
+        back_populates="owner",
+    )
+
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    owner_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id"),
+        index=True,
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
+
+    owner: Mapped[User] = relationship(
+        back_populates="conversations",
+    )
+
 
 class Document(Base):
     __tablename__ = "documents"

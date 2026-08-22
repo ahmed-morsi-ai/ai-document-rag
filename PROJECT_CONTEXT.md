@@ -104,10 +104,10 @@
 - Task 16: Add authenticated `POST /chat` Chat API endpoint — completed and verified.
 
 ## Current Task
-- Task 16: Chat API Endpoint — completed and verified.
-- `POST /chat` exposes the existing `ChatService` through an authenticated FastAPI boundary.
-- The endpoint validates `query` and `top_k` and returns provider-independent `query` and `answer` fields.
-- The chat endpoint is stateless; conversation persistence, message persistence, history, and streaming are not implemented.
+- Task 17: Conversation Persistence Model — implementation in progress.
+- `Conversation` belongs to an existing `User` through the `owner_id` foreign key.
+- The Conversation schema contains only identity, ownership, and lifecycle timestamps.
+- Message persistence, ChatService persistence integration, and chat history are not implemented.
 
 ## Next Task
-- Next: Implement the Conversation persistence model and Alembic migration.
+- Next: Implement the Message persistence model and conversation relationship.

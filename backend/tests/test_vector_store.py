@@ -69,6 +69,94 @@ class VectorStoreTests(unittest.TestCase):
                 metadatas,
             )
 
+    def test_delete_by_document_id_removes_only_matching_vectors(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ChromaVectorStore(
+                persist_directory=Path(temp_dir),
+                collection_name="test_collection",
+            )
+
+            store.add(
+                ids=["a-1", "a-2", "b-1", "c-1"],
+                embeddings=[
+                    [1.0, 0.0],
+                    [0.9, 0.0],
+                    [0.0, 1.0],
+                    [0.0, 0.9],
+                ],
+                texts=[
+                    "a one",
+                    "a two",
+                    "b one",
+                    "c one",
+                ],
+                metadatas=[
+                    {"document_id": "document-a", "chunk_index": "0"},
+                    {"document_id": "document-a", "chunk_index": "1"},
+                    {"document_id": "document-b", "chunk_index": "0"},
+                    {"document_id": "document-c", "chunk_index": "0"},
+                ],
+            )
+
+            store.delete_by_document_id("document-a")
+
+            remaining = store.collection.get(
+                include=["documents", "metadatas"],
+            )
+
+            self.assertEqual(
+                remaining["ids"],
+                ["b-1", "c-1"],
+            )
+            self.assertEqual(
+                remaining["documents"],
+                ["b one", "c one"],
+            )
+            self.assertEqual(
+                remaining["metadatas"],
+                [
+                    {"document_id": "document-b", "chunk_index": "0"},
+                    {"document_id": "document-c", "chunk_index": "0"},
+                ],
+            )
+
+    def test_delete_by_document_id_is_idempotent(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ChromaVectorStore(
+                persist_directory=Path(temp_dir),
+                collection_name="test_collection",
+            )
+
+            store.add(
+                ids=["a-1"],
+                embeddings=[[1.0, 0.0]],
+                texts=["a one"],
+                metadatas=[
+                    {"document_id": "document-a", "chunk_index": "0"},
+                ],
+            )
+
+            store.delete_by_document_id("document-a")
+            store.delete_by_document_id("document-a")
+
+            self.assertEqual(
+                store.collection.count(),
+                0,
+            )
+
+    def test_delete_by_document_id_rejects_empty_document_id(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ChromaVectorStore(
+                persist_directory=Path(temp_dir),
+                collection_name="test_collection",
+            )
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "document_id must not be empty",
+            ):
+                store.delete_by_document_id("")
+
     def test_query_returns_nearest_items_with_provider_independent_results(
         self,
     ):

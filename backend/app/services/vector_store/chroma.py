@@ -88,3 +88,12 @@ class ChromaVectorStore(VectorStore):
                 metadatas,
             )
         ]
+
+
+    def delete_by_document_id(self, document_id: str) -> None:
+        if not document_id:
+            raise ValueError("document_id must not be empty")
+
+        self.collection.delete(
+            where={"document_id": document_id},
+        )

@@ -30,3 +30,8 @@ class VectorStore(ABC):
         top_k: int = 5,
     ) -> list[VectorQueryResult]:
         """Return nearest stored vectors in provider-independent form."""
+
+
+    @abstractmethod
+    def delete_by_document_id(self, document_id: str) -> None:
+        """Delete all vectors belonging to the specified document."""

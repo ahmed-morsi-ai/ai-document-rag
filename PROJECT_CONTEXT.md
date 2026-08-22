@@ -113,13 +113,18 @@
 ## Current Task
 - Task 25 — Application Workflow.
 - Batch 1 — Document-to-Chat Workflow Integration: CLOSED.
+- Batch 2A — Provider-Independent Vector Deletion: CLOSED.
 - Task 24 remains fully closed.
-- Dashboard `/app` now provides a clear navigation action to `/app/chat`.
-- The dashboard document area explains the upload-to-chat workflow without claiming unsupported processing/indexing behavior.
-- The empty document state clearly directs the user to the existing upload area and explains the next Chat step.
-- Successful document upload keeps the user on the Dashboard and exposes a `Continue to Chat` action.
-- No new document processing or indexing API contract was introduced.
-- No backend changes were required for this workflow batch.
+- `VectorStore` now exposes document-scoped vector deletion through `delete_by_document_id(document_id)`.
+- The Chroma implementation deletes vectors using the existing `document_id` metadata field.
+- Empty document identifiers are rejected.
+- Repeated vector deletion is supported idempotently.
+- Existing vector add/query behavior is unchanged.
+- Document database deletion is NOT implemented in Batch 2A.
+- Stored file deletion is NOT implemented in Batch 2A.
+- `DELETE /documents` is NOT implemented in Batch 2A.
+- The frontend is unchanged in Batch 2A.
+- The new vector deletion capability is the prerequisite for a later safe document-deletion workflow.
 
 ## Next Task
-- Next: Task 25 Batch 2 / next project milestone.
+- Next: Task 25 Safe Document Deletion.

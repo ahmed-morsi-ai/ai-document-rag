@@ -3,6 +3,7 @@ import { describe, expect, it, beforeEach, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
 import { ChatPage } from "./pages/ChatPage";
+import type { ConversationMessage } from "./types/conversations";
 
 const getConversationsMock = vi.fn();
 const getConversationMessagesMock = vi.fn();
@@ -61,7 +62,7 @@ const conversation = {
 
 describe("ChatPage", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     sendMessageMock.mockResolvedValue({
       query: "hello",
       answer: "hello answer",
@@ -508,6 +509,247 @@ describe("ChatPage", () => {
         screen.getByText("persisted answer"),
       ).toBeInTheDocument(),
     );
+  });
+
+  it("does not let stale history overwrite the newly selected conversation", async () => {
+    const conversationB = {
+      id: "44444444-4444-4444-8444-444444444444",
+      created_at: "2026-01-03T00:00:00Z",
+      updated_at: "2026-01-03T00:00:00Z",
+    };
+
+    let resolveA!: (value: {
+      conversation: typeof conversation;
+      messages: ConversationMessage[];
+    }) => void;
+
+    let resolveB!: (value: {
+      conversation: typeof conversationB;
+      messages: ConversationMessage[];
+    }) => void;
+
+    getConversationsMock.mockResolvedValueOnce({
+      conversations: [conversation, conversationB],
+    });
+
+    getConversationMessagesMock
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveA = resolve;
+        }),
+      )
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveB = resolve;
+        }),
+      );
+
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: conversation.id,
+      }),
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: conversationB.id,
+      }),
+    );
+
+    resolveA({
+      conversation,
+      messages: [
+        {
+          id: "message-a",
+          role: "user",
+          content: "stale A",
+          sequence_number: 1,
+          created_at: "2026-01-02T00:00:00Z",
+        },
+      ],
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText("stale A"),
+      ).not.toBeInTheDocument(),
+    );
+
+    resolveB({
+      conversation: conversationB,
+      messages: [
+        {
+          id: "message-b",
+          role: "user",
+          content: "current B",
+          sequence_number: 1,
+          created_at: "2026-01-03T00:00:00Z",
+        },
+      ],
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("current B"),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it("keeps a sent message when existing-conversation synchronization fails", async () => {
+    getConversationsMock.mockResolvedValueOnce({
+      conversations: [conversation],
+    });
+
+    getConversationMessagesMock
+      .mockResolvedValueOnce({
+        conversation,
+        messages: [],
+      })
+      .mockRejectedValueOnce(new Error("sync failed"))
+      .mockResolvedValueOnce({
+        conversation,
+        messages: [
+          {
+            id: "persisted-user",
+            role: "user",
+            content: "keep me",
+            sequence_number: 1,
+            created_at: "2026-01-02T00:00:00Z",
+          },
+          {
+            id: "persisted-assistant",
+            role: "assistant",
+            content: "persisted answer",
+            sequence_number: 2,
+            created_at: "2026-01-02T00:01:00Z",
+          },
+        ],
+      });
+
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: conversation.id,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("This conversation has no messages yet."),
+      ).toBeInTheDocument(),
+    );
+
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Message" }),
+      {
+        target: { value: "keep me" },
+      },
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Send" }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          "Message sent, but the conversation could not be synchronized.",
+        ),
+      ).toBeInTheDocument(),
+    );
+
+    expect(screen.getByText("keep me")).toBeInTheDocument();
+    expect(sendMessageMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Retry synchronization",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("persisted answer"),
+      ).toBeInTheDocument(),
+    );
+
+    expect(sendMessageMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries new-conversation synchronization without resending the message", async () => {
+    const newConversation = {
+      id: "55555555-5555-4555-8555-555555555555",
+      created_at: "2026-01-04T00:00:00Z",
+      updated_at: "2026-01-04T00:00:00Z",
+    };
+
+    getConversationsMock
+      .mockResolvedValueOnce({ conversations: [] })
+      .mockRejectedValueOnce(new Error("list sync failed"))
+      .mockResolvedValueOnce({
+        conversations: [newConversation],
+      });
+
+    getConversationMessagesMock.mockResolvedValueOnce({
+      conversation: newConversation,
+      messages: [
+        {
+          id: "persisted-user",
+          role: "user",
+          content: "new chat",
+          sequence_number: 1,
+          created_at: "2026-01-04T00:00:00Z",
+        },
+        {
+          id: "persisted-assistant",
+          role: "assistant",
+          content: "new persisted answer",
+          sequence_number: 2,
+          created_at: "2026-01-04T00:01:00Z",
+        },
+      ],
+    });
+
+    renderPage();
+
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Message" }),
+      {
+        target: { value: "new chat" },
+      },
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Send" }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", {
+          name: "Retry synchronization",
+        }),
+      ).toBeInTheDocument(),
+    );
+
+    expect(screen.getByText("new chat")).toBeInTheDocument();
+    expect(sendMessageMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Retry synchronization",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("new persisted answer"),
+      ).toBeInTheDocument(),
+    );
+
+    expect(sendMessageMock).toHaveBeenCalledTimes(1);
   });
 
   it("sends a non-empty message", async () => {

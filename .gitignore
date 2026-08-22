@@ -49,3 +49,7 @@ __pycache__/
 .DS_Store
 
 vector_store/
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.env
+/frontend/.env.local

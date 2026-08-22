@@ -107,13 +107,15 @@
 - Task 19: Add Chat Persistence Service for conversations and messages — completed and verified.
 - Task 20: Persist chat interactions through `ChatService` — completed and verified.
 - Task 21: Add authenticated conversation history endpoints — completed and verified.
+- Task 22: Add frontend foundation and authentication — completed and verified.
 
 ## Current Task
-- Task 21: Conversation History API — implemented and verified.
-- `GET /conversations` returns only the authenticated user's conversations in deterministic order.
-- `GET /conversations/{conversation_id}/messages` returns ownership-validated conversation history in `sequence_number` order.
-- Both endpoints use the existing authentication dependency and `ChatPersistenceService`.
-- Frontend integration and streaming are not implemented.
+- Task 22: Frontend Foundation + Authentication — completed and verified.
+- The frontend uses React + TypeScript + Vite with React Router.
+- Authentication uses the existing `/auth/register`, `/auth/login`, and `/auth/me` backend contract.
+- Access tokens are persisted locally and restored through the existing authenticated-user endpoint.
+- Protected application routing and logout are implemented.
+- Dashboard, document upload UI, chat UI, conversation history UI, and streaming are not implemented yet.
 
 ## Next Task
-- Next: Frontend integration for authenticated chat and conversation history.
+- Next: Implement the first frontend product workflow on top of the authenticated application shell.

@@ -20,3 +20,15 @@ export interface ConversationHistoryResponse {
   conversation: ConversationItem;
   messages: ConversationMessage[];
 }
+
+
+export interface ChatRequest {
+  query: string;
+  top_k?: number;
+  conversation_id?: string;
+}
+
+export interface ChatResponse {
+  query: string;
+  answer: string;
+}

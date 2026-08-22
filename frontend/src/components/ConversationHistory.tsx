@@ -13,7 +13,9 @@ export function ConversationHistory({
   error,
   hasActiveConversation,
 }: ConversationHistoryProps) {
-  if (!hasActiveConversation) {
+  const hasMessages = messages.length > 0;
+
+  if (!hasActiveConversation && !hasMessages) {
     return (
       <section
         className="chat-history"
@@ -47,11 +49,11 @@ export function ConversationHistory({
         <p role="alert">{error}</p>
       ) : null}
 
-      {!isLoading && !error && messages.length === 0 ? (
+      {!isLoading && !error && !hasMessages ? (
         <p className="muted">This conversation has no messages yet.</p>
       ) : null}
 
-      {!isLoading && !error && messages.length > 0 ? (
+      {!isLoading && !error && hasMessages ? (
         <ol className="message-list">
           {messages.map((message) => (
             <li

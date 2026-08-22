@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -6,6 +6,7 @@ import { ChatPage } from "./pages/ChatPage";
 
 const getConversationsMock = vi.fn();
 const getConversationMessagesMock = vi.fn();
+const sendMessageMock = vi.fn();
 const logoutMock = vi.fn();
 
 vi.mock("./services/api", () => ({
@@ -16,6 +17,10 @@ vi.mock("./services/api", () => ({
       super(message);
       this.status = status;
     }
+  },
+  chatApi: {
+    sendMessage: (...args: unknown[]) =>
+      sendMessageMock(...args),
   },
   conversationApi: {
     getConversations: (...args: unknown[]) =>
@@ -57,6 +62,10 @@ const conversation = {
 describe("ChatPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sendMessageMock.mockResolvedValue({
+      query: "hello",
+      answer: "hello answer",
+    });
     getConversationsMock.mockResolvedValue({
       conversations: [],
     });
@@ -230,17 +239,297 @@ describe("ChatPage", () => {
     );
   });
 
-  it("does not expose or call chat submission in batch 1", async () => {
+  it("does not send empty or whitespace-only messages", async () => {
     renderPage();
 
     await waitFor(() =>
       expect(getConversationsMock).toHaveBeenCalledTimes(1),
     );
 
-    const textarea = screen.getByRole("textbox", { name: "Message" });
-    const sendButton = screen.getByRole("button", { name: "Send" });
+    const textarea = screen.getByRole("textbox", {
+      name: "Message",
+    });
+    const sendButton = screen.getByRole("button", {
+      name: "Send",
+    });
 
-    expect(textarea).toBeDisabled();
+    await act(async () => {
+      fireEvent.change(textarea, {
+        target: { value: "" },
+      });
+    });
     expect(sendButton).toBeDisabled();
+
+    await act(async () => {
+      fireEvent.change(textarea, {
+        target: { value: "   " },
+      });
+    });
+    expect(sendButton).toBeDisabled();
+
+    expect(sendMessageMock).not.toHaveBeenCalled();
+  });
+
+  it("sends the active conversation id for an existing conversation", async () => {
+    getConversationsMock.mockResolvedValueOnce({
+      conversations: [conversation],
+    });
+
+    getConversationMessagesMock.mockResolvedValue({
+      conversation,
+      messages: [],
+    });
+
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: conversation.id,
+      }),
+    );
+
+    const textarea = screen.getByRole("textbox", {
+      name: "Message",
+    });
+
+    fireEvent.change(textarea, {
+      target: { value: "continue" },
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Send" }),
+    );
+
+    await waitFor(() =>
+      expect(sendMessageMock).toHaveBeenCalledWith(
+        "test-token",
+        {
+          query: "continue",
+          conversation_id: conversation.id,
+        },
+      ),
+    );
+  });
+
+  it("shows the user message while sending and prevents duplicate sends", async () => {
+    let resolveSend!: (value: {
+      query: string;
+      answer: string;
+    }) => void;
+
+    sendMessageMock.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSend = resolve;
+      }),
+    );
+
+    renderPage();
+
+    const textarea = screen.getByRole("textbox", {
+      name: "Message",
+    });
+
+    fireEvent.change(textarea, {
+      target: { value: "pending question" },
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Send" }),
+    );
+
+    expect(
+      screen.getByText("pending question"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Generating…" }),
+    ).toBeDisabled();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Generating…" }),
+    );
+
+    expect(sendMessageMock).toHaveBeenCalledTimes(1);
+
+    resolveSend({
+      query: "pending question",
+      answer: "generated answer",
+    });
+
+    await waitFor(() =>
+      expect(sendMessageMock).toHaveBeenCalledTimes(1),
+    );
+  });
+
+  it("shows the assistant answer after a successful send", async () => {
+    getConversationsMock
+      .mockResolvedValueOnce({ conversations: [] })
+      .mockResolvedValueOnce({
+        conversations: [conversation],
+      });
+
+    getConversationMessagesMock.mockResolvedValueOnce({
+      conversation,
+      messages: [
+        {
+          id: "message-user",
+          role: "user",
+          content: "hello",
+          sequence_number: 1,
+          created_at: "2026-01-02T00:00:00Z",
+        },
+        {
+          id: "message-assistant",
+          role: "assistant",
+          content: "hello answer",
+          sequence_number: 2,
+          created_at: "2026-01-02T00:01:00Z",
+        },
+      ],
+    });
+
+    renderPage();
+
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Message" }),
+      { target: { value: "hello" } },
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Send" }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("hello answer"),
+      ).toBeInTheDocument(),
+    );
+
+    expect(
+      getConversationMessagesMock,
+    ).toHaveBeenCalledWith(
+      "test-token",
+      conversation.id,
+    );
+  });
+
+  it("restores input and allows retry after send failure", async () => {
+    sendMessageMock.mockRejectedValueOnce(
+      new Error("send failed"),
+    );
+
+    renderPage();
+
+    const textarea = screen.getByRole("textbox", {
+      name: "Message",
+    });
+
+    fireEvent.change(textarea, {
+      target: { value: "retry me" },
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Send" }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Unable to send the message."),
+      ).toBeInTheDocument(),
+    );
+
+    expect(textarea).toHaveValue("retry me");
+    expect(
+      screen.getByRole("button", { name: "Send" }),
+    ).not.toBeDisabled();
+  });
+
+  it("reconciles a new conversation and loads its persisted history", async () => {
+    const newConversation = {
+      id: "33333333-3333-4333-8333-333333333333",
+      created_at: "2026-01-03T00:00:00Z",
+      updated_at: "2026-01-03T00:00:00Z",
+    };
+
+    getConversationsMock
+      .mockResolvedValueOnce({ conversations: [] })
+      .mockResolvedValueOnce({
+        conversations: [newConversation],
+      });
+
+    getConversationMessagesMock.mockResolvedValueOnce({
+      conversation: newConversation,
+      messages: [
+        {
+          id: "persisted-user",
+          role: "user",
+          content: "new conversation",
+          sequence_number: 1,
+          created_at: "2026-01-03T00:00:00Z",
+        },
+        {
+          id: "persisted-assistant",
+          role: "assistant",
+          content: "persisted answer",
+          sequence_number: 2,
+          created_at: "2026-01-03T00:01:00Z",
+        },
+      ],
+    });
+
+    renderPage();
+
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Message" }),
+      {
+        target: { value: "new conversation" },
+      },
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Send" }),
+    );
+
+    await waitFor(() =>
+      expect(
+        getConversationsMock,
+      ).toHaveBeenCalledTimes(2),
+    );
+
+    expect(
+      getConversationMessagesMock,
+    ).toHaveBeenCalledWith(
+      "test-token",
+      newConversation.id,
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("persisted answer"),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it("sends a non-empty message", async () => {
+    renderPage();
+
+    const textarea = screen.getByRole("textbox", {
+      name: "Message",
+    });
+
+    fireEvent.change(textarea, {
+      target: { value: "hello" },
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Send" }),
+    );
+
+    await waitFor(() =>
+      expect(sendMessageMock).toHaveBeenCalledWith(
+        "test-token",
+        { query: "hello" },
+      ),
+    );
   });
 });

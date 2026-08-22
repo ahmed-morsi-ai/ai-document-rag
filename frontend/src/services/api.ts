@@ -1,4 +1,6 @@
 import type {
+  ChatRequest,
+  ChatResponse,
   ConversationHistoryResponse,
   ConversationListResponse,
 } from "../types/conversations";
@@ -88,6 +90,15 @@ export const authApi = {
   },
 };
 
+
+export const chatApi = {
+  sendMessage(token: string, chatRequest: ChatRequest) {
+    return request<ChatResponse>("/chat", {
+      method: "POST",
+      body: JSON.stringify(chatRequest),
+    }, token);
+  },
+};
 
 export const conversationApi = {
   getConversations(token: string) {

@@ -111,20 +111,27 @@
 - Task 23: Add dashboard and document upload — completed and verified.
 
 ## Current Task
-- Task 24 Batch 1: Chat conversation UI read/state foundation — implemented and verified.
+- Task 24 Batch 1: Chat conversation UI read/state foundation — closed and verified.
+- Task 24 Batch 2: Chat message sending — implemented and verified.
 - Task 22 remains closed: frontend authentication and protected routing are preserved.
 - Task 23 remains closed: dashboard and document upload are preserved.
-- The protected `/app/chat` route exposes the Chat page.
-- The Chat page loads the authenticated user's conversations through `GET /conversations`.
-- Selecting a conversation loads persisted messages through `GET /conversations/{conversation_id}/messages`.
-- Server-provided message ordering is preserved without client-side sorting.
-- Conversation list and history support loading, empty, and error states.
-- New conversation clears the active conversation ID and visible history without creating a backend conversation.
-- A disabled placeholder composer is present.
-- `POST /chat` message sending is not implemented yet and is reserved for Task 24 Batch 2.
+- The protected `/app/chat` route provides the functional Chat UI.
+- The frontend uses the typed `POST /chat` API with the existing backend contract.
+- Existing conversations send `conversation_id` when an active conversation is selected.
+- New conversations send the first message without a `conversation_id`.
+- After a successful first message, the frontend refreshes `GET /conversations`, identifies exactly one newly created conversation by ID set difference, makes it active, and loads its persisted history.
+- Persisted history is the final synchronized state; optimistic user messages are removed if sending fails.
+- Empty and whitespace-only messages cannot be sent.
+- Duplicate submissions are prevented while a message request is pending.
+- Chat send, history synchronization, loading, and error states are handled in the frontend.
+- `ChatResponse` does not provide `conversation_id`.
 - Streaming is not implemented.
+- Sources/citations UI is not implemented.
+- Visual redesign/polish remains separate.
 
 ## Next Task
+- Next: Future project task.
+- Next: Future Task 25 / next project task.
 - Next: Task 24 Batch 2 — integrate synchronous `POST /chat` message sending and conversation reconciliation.
 - Next: Task 24 Batch 2 — integrate synchronous `POST /chat` message sending and conversation reconciliation.
 - Next: Task 24 Batch 2 — integrate synchronous `POST /chat` message sending and conversation reconciliation.

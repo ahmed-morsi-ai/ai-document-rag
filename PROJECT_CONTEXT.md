@@ -111,32 +111,15 @@
 - Task 23: Add dashboard and document upload — completed and verified.
 
 ## Current Task
-- Task 24 — Frontend Chat UI: FULLY CLOSED.
-- Task 24 Batch 1 — Chat Conversation UI: CLOSED.
-- Task 24 Batch 2 — Chat Message Sending: CLOSED.
-- Task 24 Batch 3 — Chat UI Finalization: CLOSED.
-- Task 22 remains closed: frontend authentication and protected routing are preserved.
-- Task 23 remains closed: dashboard and document upload are preserved.
-- The protected `/app/chat` route provides the complete synchronous Chat UI.
-- Conversation list, selection, persisted history loading, and new conversation state are implemented.
-- Typed `POST /chat` messaging uses the existing backend contract.
-- Existing conversations send `conversation_id`.
-- New conversations reconcile the newly persisted conversation through `GET /conversations` without inventing IDs.
-- Persisted server history is the final synchronized state.
-- Stale history responses cannot overwrite a newly selected conversation.
-- Failed sends remain retryable without automatic resubmission.
-- Post-send synchronization failures are handled separately from message-send failures.
-- Loading states cover conversation list, history, message sending, and synchronization.
-- Empty states cover no conversations, new conversation, and empty history.
-- User-facing error handling covers list loading, history loading, send failures, and synchronization failures.
-- Duplicate message submissions are prevented while sending.
-- Streaming is not implemented.
-- Sources/citations UI is not implemented.
-- Conversation rename/delete is not implemented.
-- Message edit/delete is not implemented.
-- Regeneration is not implemented.
-- Chat attachments are not implemented.
-- Major visual redesign is outside Task 24.
+- Task 25 — Application Workflow.
+- Batch 1 — Document-to-Chat Workflow Integration: CLOSED.
+- Task 24 remains fully closed.
+- Dashboard `/app` now provides a clear navigation action to `/app/chat`.
+- The dashboard document area explains the upload-to-chat workflow without claiming unsupported processing/indexing behavior.
+- The empty document state clearly directs the user to the existing upload area and explains the next Chat step.
+- Successful document upload keeps the user on the Dashboard and exposes a `Continue to Chat` action.
+- No new document processing or indexing API contract was introduced.
+- No backend changes were required for this workflow batch.
 
 ## Next Task
-- Next: Task 25 / next project milestone.
+- Next: Task 25 Batch 2 / next project milestone.

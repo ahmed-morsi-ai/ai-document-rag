@@ -90,6 +90,24 @@ describe("DashboardPage", () => {
     expect(listMock).toHaveBeenCalledWith("test-token");
   });
 
+  it("provides a clear path from the dashboard to chat", async () => {
+    listMock.mockResolvedValue([]);
+
+    renderDashboard();
+
+    await screen.findByText(
+      "No documents uploaded yet. Use the upload area above to add your first document.",
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Open Chat" }),
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Open Chat" }),
+    ).toBeInTheDocument();
+  });
+
   it("shows a user-facing list error", async () => {
     listMock.mockRejectedValue(
       new Error("server unavailable"),
@@ -104,13 +122,52 @@ describe("DashboardPage", () => {
     );
   });
 
+  it("shows the post-upload Continue to Chat action", async () => {
+    listMock.mockResolvedValue([]);
+    uploadMock.mockResolvedValue(makeDocument());
+
+    renderDashboard();
+
+    await screen.findByText(
+      "No documents uploaded yet. Use the upload area above to add your first document.",
+    );
+
+    const input = screen.getByLabelText(
+      "Choose a PDF, DOCX, or TXT file",
+    );
+
+    const file = new File(
+      ["pdf"],
+      "report.pdf",
+      { type: "application/pdf" },
+    );
+
+    fireEvent.change(input, {
+      target: { files: [file] },
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Upload document",
+      }),
+    );
+
+    await screen.findByRole("status");
+
+    expect(
+      screen.getByRole("button", {
+        name: "Continue to Chat",
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("logout remains functional", async () => {
     listMock.mockResolvedValue([]);
 
     renderDashboard();
 
     await screen.findByText(
-      "No documents uploaded yet.",
+      "No documents uploaded yet. Use the upload area above to add your first document.",
     );
 
     fireEvent.click(
@@ -194,6 +251,48 @@ describe("DocumentUpload", () => {
     ).toBeDisabled();
 
     expect(uploadMock).not.toHaveBeenCalled();
+  });
+
+  it("upload success exposes a clear next step to Chat", async () => {
+    const uploaded = makeDocument();
+    const onUploaded = vi.fn();
+
+    uploadMock.mockResolvedValue(uploaded);
+
+    render(
+      <DocumentUpload
+        token="test-token"
+        onUploaded={onUploaded}
+      />,
+    );
+
+    const input = screen.getByLabelText(
+      "Choose a PDF, DOCX, or TXT file",
+    );
+
+    const file = new File(
+      ["pdf"],
+      "report.pdf",
+      { type: "application/pdf" },
+    );
+
+    fireEvent.change(input, {
+      target: { files: [file] },
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Upload document",
+      }),
+    );
+
+    expect(
+      await screen.findByRole("status"),
+    ).toHaveTextContent(
+      "Document uploaded successfully.",
+    );
+
+    expect(onUploaded).toHaveBeenCalledWith(uploaded);
   });
 
   it("uploads a supported file and shows success", async () => {

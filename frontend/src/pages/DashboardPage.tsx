@@ -17,6 +17,7 @@ export function DashboardPage() {
   >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showChatCta, setShowChatCta] = useState(false);
 
   const loadDocuments = useCallback(async () => {
     if (!token) {
@@ -59,6 +60,7 @@ export function DashboardPage() {
       document,
       ...current,
     ]);
+    setShowChatCta(true);
   }
 
   function handleLogout() {
@@ -77,18 +79,48 @@ export function DashboardPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleLogout}
-        >
-          Log out
-        </button>
+        <div>
+          <button
+            type="button"
+            onClick={() => navigate("/app/chat")}
+          >
+            Open Chat
+          </button>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+          >
+            Log out
+          </button>
+        </div>
       </header>
 
-      <DocumentUpload
-        token={token!}
-        onUploaded={handleUploaded}
-      />
+      <section aria-labelledby="document-workflow-title">
+        <h2 id="document-workflow-title">
+          Documents and Chat
+        </h2>
+        <p>
+          Upload a document, then continue to Chat to ask
+          questions about your available document context.
+        </p>
+
+        <DocumentUpload
+          token={token!}
+          onUploaded={handleUploaded}
+        />
+
+        {showChatCta ? (
+          <p>
+            <button
+              type="button"
+              onClick={() => navigate("/app/chat")}
+            >
+              Continue to Chat
+            </button>
+          </p>
+        ) : null}
+      </section>
 
       <DocumentList
         documents={documents}

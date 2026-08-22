@@ -26,7 +26,16 @@ export function DocumentList({
       {!isLoading &&
       !error &&
       documents.length === 0 ? (
-        <p>No documents uploaded yet.</p>
+        <div>
+          <p>
+            No documents uploaded yet. Use the upload area above
+            to add your first document.
+          </p>
+          <p>
+            After uploading, use Continue to Chat to start asking
+            questions.
+          </p>
+        </div>
       ) : null}
 
       {!isLoading && !error && documents.length > 0 ? (

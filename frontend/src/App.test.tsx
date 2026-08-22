@@ -74,6 +74,26 @@ describe("frontend authentication foundation", () => {
     ).toBeInTheDocument();
   });
 
+  it("exposes the authenticated Chat route", async () => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, "test-token");
+
+    meMock.mockResolvedValue({
+      id: "user-1",
+      email: "ahmed@example.com",
+      is_active: true,
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/app/chat"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Chat" }),
+    ).toBeInTheDocument();
+  });
+
   it("restores an authenticated user from the persisted token", async () => {
     localStorage.setItem(TOKEN_STORAGE_KEY, "test-token");
 

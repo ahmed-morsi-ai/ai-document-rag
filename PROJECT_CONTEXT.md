@@ -115,15 +115,18 @@
 - Batch 1 — Document-to-Chat Workflow Integration: CLOSED.
 - Batch 2A — Provider-Independent Vector Deletion: CLOSED.
 - Batch 2B1 — VectorStore Application Wiring: CLOSED.
+- Batch 2B2 — Safe Backend Document Deletion: CLOSED.
 - Task 24 remains fully closed.
-- Application-level code can obtain the existing provider-independent `VectorStore` through `get_vector_store()`.
-- `get_vector_store()` owns the configured `ChromaVectorStore` construction using the existing vector-store settings.
-- Retrieval and document-indexing factories reuse the shared VectorStore factory instead of duplicating Chroma construction.
-- The provider-independent `VectorStore` contract is unchanged.
-- Chroma deletion behavior is unchanged.
-- Safe document deletion is NOT implemented yet.
-- No `DELETE /documents` endpoint exists yet.
-- No frontend document-deletion flow exists yet.
+- Backend document deletion authenticates the user and only resolves documents owned by that user.
+- Deletion orchestrates vector cleanup through the provider-independent `VectorStore` boundary.
+- Stored files are removed through the existing path-safe document storage abstraction.
+- The database record is deleted and committed only after vector and file cleanup succeed.
+- Cleanup is not an atomic distributed transaction across vector storage, filesystem, and database.
+- Vector-cleanup or storage-cleanup failures leave the document database record intact and are surfaced as request failures.
+- Database commit failure is propagated after external cleanup; no compensating rollback is claimed.
+- `DELETE /documents/{document_id}` is implemented as the authenticated backend deletion endpoint.
+- Frontend document deletion is NOT implemented yet.
+- No frontend document API changes were made in Batch 2B2.
 
 ## Next Task
-- Next: Task 25 Safe Backend Document Deletion.
+- Next: Task 25 Frontend Document Deletion Flow.

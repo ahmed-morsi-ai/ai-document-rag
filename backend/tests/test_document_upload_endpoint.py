@@ -1,3 +1,5 @@
+from unittest.mock import Mock, AsyncMock
+from fastapi import HTTPException
 import os
 import unittest
 from datetime import datetime, timezone
@@ -501,3 +503,100 @@ class DocumentListEndpointTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [])
+
+
+class DocumentDeleteEndpointTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.client = TestClient(app)
+
+    def test_delete_route_exists_and_requires_authentication(self):
+        response = self.client.delete(
+            "/documents/00000000-0000-4000-8000-000000000001"
+        )
+        self.assertEqual(response.status_code, 401)
+
+    async def test_owned_document_deletion_uses_service(self):
+        from unittest.mock import AsyncMock, patch
+        from uuid import UUID
+
+        owner_id = UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+        document_id = UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
+        user = Mock(id=owner_id, is_active=True)
+        document = Mock(
+            id=document_id,
+            owner_id=owner_id,
+            storage_path="owner/document.pdf",
+        )
+
+        db = AsyncMock()
+
+        result = Mock()
+        result.scalar_one_or_none.return_value = document
+        db.execute.return_value = result
+
+        service = Mock()
+        service.delete_owned_document = AsyncMock()
+
+        with patch(
+            "app.api.routes.documents.get_vector_store",
+        ), patch(
+            "app.api.routes.documents.DocumentDeletionService",
+            return_value=service,
+        ):
+            from app.api.routes.documents import delete_document_route
+
+            await delete_document_route(
+                str(document_id),
+                current_user=user,
+                db=db,
+            )
+
+        service.delete_owned_document.assert_awaited_once_with(document)
+
+    async def test_other_user_document_is_not_accessible(self):
+        from uuid import UUID
+
+        owner_id = UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+        other_id = UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc")
+        document_id = UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb")
+
+        user = Mock(id=other_id, is_active=True)
+        db = AsyncMock()
+        result = Mock()
+        result.scalar_one_or_none.return_value = None
+        db.execute.return_value = result
+
+        from app.api.routes.documents import delete_document_route
+
+        with self.assertRaises(HTTPException) as context:
+            await delete_document_route(
+                str(document_id),
+                current_user=user,
+                db=db,
+            )
+
+        self.assertEqual(context.exception.status_code, 404)
+
+    async def test_missing_document_is_not_found(self):
+        from uuid import UUID
+
+        user = Mock(
+            id=UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+            is_active=True,
+        )
+
+        db = AsyncMock()
+        result = Mock()
+        result.scalar_one_or_none.return_value = None
+        db.execute.return_value = result
+
+        from app.api.routes.documents import delete_document_route
+
+        with self.assertRaises(HTTPException) as context:
+            await delete_document_route(
+                "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+                current_user=user,
+                db=db,
+            )
+
+        self.assertEqual(context.exception.status_code, 404)

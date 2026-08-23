@@ -1,7 +1,10 @@
+from uuid import UUID
+
 from fastapi import (
     APIRouter,
     Depends,
     File,
+    HTTPException,
     UploadFile,
     status,
 )
@@ -17,7 +20,9 @@ from app.services.document_storage import (
     store_document,
 )
 from app.services.document_validation import validate_document_upload
+from app.services.document_deletion import DocumentDeletionService
 from app.services.document_indexing_factory import get_document_indexer
+from app.services.vector_store_factory import get_vector_store
 from app.schemas.documents import DocumentResponse
 
 
@@ -91,3 +96,46 @@ async def upload_document(
     )
 
     return document
+
+
+@router.delete(
+    "/{document_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_document_route(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        document_uuid = UUID(document_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    result = await db.execute(
+        select(Document).where(
+            Document.id == document_uuid,
+            Document.owner_id == current_user.id,
+        )
+    )
+    document = result.scalar_one_or_none()
+
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    deletion_service = DocumentDeletionService(
+        db=db,
+        vector_store=get_vector_store(),
+    )
+
+    try:
+        await deletion_service.delete_owned_document(document)
+    except Exception:
+        await db.rollback()
+        raise

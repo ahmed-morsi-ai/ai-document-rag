@@ -115,4 +115,14 @@ export const conversationApi = {
       token,
     );
   },
+
+  deleteConversation(token: string, conversationId: string) {
+    return request<void>(
+      `/conversations/${conversationId}`,
+      {
+        method: "DELETE",
+      },
+      token,
+    );
+  },
 };

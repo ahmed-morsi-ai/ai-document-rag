@@ -52,6 +52,11 @@ export function ChatPage() {
   const [isSending, setIsSending] = useState(false);
   const [pendingSynchronization, setPendingSynchronization] =
     useState<PendingSynchronization | null>(null);
+  const [deleteTargetConversationId, setDeleteTargetConversationId] =
+    useState<string | null>(null);
+  const [deletingConversationId, setDeletingConversationId] =
+    useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState("");
 
   const chatOperationRef = useRef(0);
   const skipNextHistoryLoadRef = useRef<string | null>(null);
@@ -199,6 +204,77 @@ export function ChatPage() {
     setHistoryError("");
     setSendError("");
     setInputValue("");
+  }
+
+  function handleDeleteRequest(conversationId: string) {
+    if (
+      deleteTargetConversationId !== null ||
+      deletingConversationId !== null
+    ) {
+      return;
+    }
+
+    setDeleteError("");
+    setDeleteTargetConversationId(conversationId);
+  }
+
+  function handleDeleteCancel() {
+    setDeleteError("");
+    setDeleteTargetConversationId(null);
+  }
+
+  async function handleDeleteConfirm(conversationId: string) {
+    if (!token || deleteTargetConversationId !== conversationId) {
+      return;
+    }
+
+    setDeleteError("");
+    setDeletingConversationId(conversationId);
+    setDeleteTargetConversationId(null);
+
+    try {
+      await conversationApi.deleteConversation(
+        token,
+        conversationId,
+      );
+
+      setConversations((current) =>
+        current.filter(
+          (conversation) => conversation.id !== conversationId,
+        ),
+      );
+
+      setDeletingConversationId(null);
+
+      if (activeConversationId === conversationId) {
+        historyRequestRef.current += 1;
+        invalidateChatOperation();
+        setPendingSynchronization(null);
+        setActiveConversationId(null);
+        setMessages([]);
+        setHistoryError("");
+        setSendError("");
+        setInputValue("");
+      }
+    } catch (err) {
+      if (
+        err instanceof ApiError &&
+        (err.status === 401 || err.status === 403)
+      ) {
+        setDeletingConversationId(null);
+        setDeleteTargetConversationId(null);
+        handleAuthFailure();
+        return;
+      }
+
+      setDeletingConversationId(null);
+      setDeleteTargetConversationId(null);
+      setDeleteError(
+        err instanceof ApiError
+          ? err.message
+          : "Unable to delete conversation.",
+      );
+    }
   }
 
   async function synchronizeExistingConversation(
@@ -456,8 +532,14 @@ export function ChatPage() {
           activeConversationId={activeConversationId}
           isLoading={isConversationsLoading}
           error={conversationError}
+          deleteTargetConversationId={deleteTargetConversationId}
+          deletingConversationId={deletingConversationId}
+          deleteError={deleteError}
           onSelect={handleSelectConversation}
           onNewConversation={handleNewConversation}
+          onDeleteRequest={handleDeleteRequest}
+          onDeleteCancel={handleDeleteCancel}
+          onDeleteConfirm={handleDeleteConfirm}
         />
 
         <section className="chat-main" aria-label="Chat">

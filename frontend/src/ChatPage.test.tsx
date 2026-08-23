@@ -7,6 +7,7 @@ import type { ConversationMessage } from "./types/conversations";
 
 const getConversationsMock = vi.fn();
 const getConversationMessagesMock = vi.fn();
+const deleteConversationMock = vi.fn();
 const sendMessageMock = vi.fn();
 const logoutMock = vi.fn();
 
@@ -28,6 +29,8 @@ vi.mock("./services/api", () => ({
       getConversationsMock(...args),
     getConversationMessages: (...args: unknown[]) =>
       getConversationMessagesMock(...args),
+    deleteConversation: (...args: unknown[]) =>
+      deleteConversationMock(...args),
   },
 }));
 
@@ -74,6 +77,7 @@ describe("ChatPage", () => {
       conversation,
       messages: [],
     });
+    deleteConversationMock.mockResolvedValue(undefined);
   });
 
   it("loads conversations once and renders an empty state", async () => {
@@ -195,6 +199,251 @@ describe("ChatPage", () => {
       expect(
         screen.getByText("Unable to load conversation history."),
       ).toBeInTheDocument(),
+    );
+  });
+
+  it("shows delete confirmation and does not delete when cancelled", async () => {
+    getConversationsMock.mockResolvedValueOnce({
+      conversations: [conversation],
+    });
+
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: conversation.id,
+      }),
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete" }),
+    );
+
+    expect(
+      screen.getByText("Delete this conversation?"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Cancel" }),
+    );
+
+    expect(
+      screen.queryByText("Delete this conversation?"),
+    ).not.toBeInTheDocument();
+    expect(deleteConversationMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("button", { name: conversation.id }),
+    ).toBeInTheDocument();
+  });
+
+  it("deletes a non-selected conversation without changing the active chat", async () => {
+    const conversationB = {
+      id: "44444444-4444-4444-8444-444444444444",
+      created_at: "2026-01-03T00:00:00Z",
+      updated_at: "2026-01-03T00:00:00Z",
+    };
+
+    getConversationsMock.mockResolvedValueOnce({
+      conversations: [conversation, conversationB],
+    });
+
+    getConversationMessagesMock.mockResolvedValueOnce({
+      conversation,
+      messages: [
+        {
+          id: "active-message",
+          role: "user",
+          content: "keep active",
+          sequence_number: 1,
+          created_at: "2026-01-02T00:00:00Z",
+        },
+      ],
+    });
+
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: conversation.id,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByText("keep active")).toBeInTheDocument(),
+    );
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Delete" })[1],
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm delete" }),
+    );
+
+    await waitFor(() =>
+      expect(deleteConversationMock).toHaveBeenCalledWith(
+        "test-token",
+        conversationB.id,
+      ),
+    );
+
+    expect(
+      screen.queryByRole("button", { name: conversationB.id }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: conversation.id }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("keep active")).toBeInTheDocument();
+  });
+
+  it("deletes the selected conversation and returns to the new conversation state", async () => {
+    getConversationsMock.mockResolvedValueOnce({
+      conversations: [conversation],
+    });
+
+    getConversationMessagesMock.mockResolvedValueOnce({
+      conversation,
+      messages: [
+        {
+          id: "message-1",
+          role: "user",
+          content: "stale message",
+          sequence_number: 1,
+          created_at: "2026-01-02T00:00:00Z",
+        },
+      ],
+    });
+
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: conversation.id,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByText("stale message")).toBeInTheDocument(),
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm delete" }),
+    );
+
+    await waitFor(() =>
+      expect(deleteConversationMock).toHaveBeenCalledWith(
+        "test-token",
+        conversation.id,
+      ),
+    );
+
+    expect(
+      screen.queryByRole("button", { name: conversation.id }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Start a new conversation"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("stale message"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("prevents duplicate deletion and keeps unrelated conversations enabled", async () => {
+    const conversationB = {
+      id: "44444444-4444-4444-8444-444444444444",
+      created_at: "2026-01-03T00:00:00Z",
+      updated_at: "2026-01-03T00:00:00Z",
+    };
+
+    let resolveDelete!: () => void;
+    deleteConversationMock.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        resolveDelete = resolve;
+      }),
+    );
+
+    getConversationsMock.mockResolvedValueOnce({
+      conversations: [conversation, conversationB],
+    });
+
+    renderPage();
+
+    await screen.findByRole("button", {
+      name: conversation.id,
+    });
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Delete" })[0],
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm delete" }),
+    );
+
+    expect(deleteConversationMock).toHaveBeenCalledTimes(1);
+
+    const otherConversationButton = screen.getByRole(
+      "button",
+      { name: conversationB.id },
+    );
+
+    expect(otherConversationButton).not.toBeDisabled();
+
+    resolveDelete();
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: conversation.id }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it("keeps the conversation visible and allows retry after delete failure", async () => {
+    deleteConversationMock.mockRejectedValueOnce(
+      new Error("delete failed"),
+    );
+
+    getConversationsMock.mockResolvedValueOnce({
+      conversations: [conversation],
+    });
+
+    renderPage();
+
+    await screen.findByRole("button", {
+      name: conversation.id,
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm delete" }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Unable to delete conversation.",
+      ),
+    );
+
+    expect(
+      screen.getByRole("button", { name: conversation.id }),
+    ).toBeInTheDocument();
+
+    deleteConversationMock.mockResolvedValueOnce(undefined);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm delete" }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: conversation.id }),
+      ).not.toBeInTheDocument(),
     );
   });
 

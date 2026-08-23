@@ -119,14 +119,16 @@
 - Batch 2B3 — Frontend Document Deletion Flow: CLOSED.
 - Task 26 — Conversation Management.
 - Batch 1 — Safe Backend Conversation Deletion: CLOSED.
-- `DELETE /conversations/{conversation_id}` is implemented through the existing `ChatPersistenceService`.
-- Conversation ownership is enforced by resolving the conversation using the authenticated user's owner ID.
-- The current Conversation ↔ Message database relationship has no `ondelete` or ORM delete cascade, so associated `Message` rows are explicitly deleted before the `Conversation` row.
-- Conversation deletion commits both message cleanup and conversation deletion in the existing database session boundary.
-- Missing or foreign conversations return `404 Conversation not found`, matching existing conversation-history behavior.
-- Existing conversation listing, history, chat persistence, and message persistence remain unchanged.
-- Frontend conversation deletion is NOT implemented yet.
-- No conversation rename, bulk deletion, soft deletion, or new persistence architecture was added.
+- Batch 2 — Frontend Conversation Deletion Flow: CLOSED.
+- The protected chat UI now exposes conversation deletion through the existing typed conversation API.
+- Deletion uses inline confirmation rather than a browser confirmation dialog.
+- A conversation remains visible when deletion fails, and the user can retry.
+- Duplicate deletion is prevented while the target DELETE request is in flight.
+- Deleting the active conversation clears its active selection and persisted history from the current UI state.
+- Deleting a non-active conversation leaves the active conversation and its history unchanged.
+- Existing conversation loading, selection, history synchronization, message sending, and authentication behavior remain unchanged.
+- No backend conversation changes were made in this batch.
+- No conversation rename, bulk deletion, soft deletion, or new state-management architecture was added.
 
 ## Next Task
-- Next: Task 26 Frontend Conversation Deletion Flow.
+- Next: Task 27 — continue only with the next explicitly scoped task.

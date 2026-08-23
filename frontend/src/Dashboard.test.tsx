@@ -13,12 +13,14 @@ import type { DocumentItem } from "./types/documents";
 
 const listMock = vi.fn();
 const uploadMock = vi.fn();
+const deleteDocumentMock = vi.fn();
 const logoutMock = vi.fn();
 
 vi.mock("./services/documents", () => ({
   documentsApi: {
     list: (...args: unknown[]) => listMock(...args),
     upload: (...args: unknown[]) => uploadMock(...args),
+    delete: (...args: unknown[]) => deleteDocumentMock(...args),
   },
 }));
 
@@ -60,6 +62,7 @@ describe("DashboardPage", () => {
   beforeEach(() => {
     listMock.mockReset();
     uploadMock.mockReset();
+    deleteDocumentMock.mockReset();
     logoutMock.mockReset();
   });
 
@@ -119,6 +122,144 @@ describe("DashboardPage", () => {
       await screen.findByRole("alert"),
     ).toHaveTextContent(
       "Unable to load documents.",
+    );
+  });
+
+  it("offers delete with inline confirmation and supports cancel", async () => {
+    listMock.mockResolvedValue([makeDocument()]);
+
+    renderDashboard();
+
+    await screen.findByText("report.pdf");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete" }),
+    );
+
+    expect(
+      screen.getByText("Delete this document?"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Cancel" }),
+    );
+
+    expect(
+      screen.queryByText("Delete this document?"),
+    ).not.toBeInTheDocument();
+
+    expect(deleteDocumentMock).not.toHaveBeenCalled();
+    expect(screen.getByText("report.pdf")).toBeInTheDocument();
+  });
+
+  it("deletes only the confirmed document", async () => {
+    const first = makeDocument();
+    const second = {
+      ...makeDocument(),
+      id: "22222222-2222-4222-8222-222222222222",
+      original_filename: "second.pdf",
+    };
+
+    listMock.mockResolvedValue([first, second]);
+    deleteDocumentMock.mockResolvedValue(null);
+
+    renderDashboard();
+
+    await screen.findByText("report.pdf");
+    expect(screen.getByText("second.pdf")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Delete" })[0],
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm delete" }),
+    );
+
+    await waitFor(() =>
+      expect(deleteDocumentMock).toHaveBeenCalledWith(
+        "test-token",
+        first.id,
+      ),
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByText("report.pdf")).not.toBeInTheDocument(),
+    );
+
+    expect(screen.getByText("second.pdf")).toBeInTheDocument();
+  });
+
+  it("keeps the document visible and allows retry after delete failure", async () => {
+    const document = makeDocument();
+
+    listMock.mockResolvedValue([document]);
+    deleteDocumentMock.mockRejectedValueOnce(new Error("Delete unavailable"));
+
+    renderDashboard();
+
+    await screen.findByText("report.pdf");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm delete" }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Unable to delete document. Please try again.",
+      ),
+    );
+
+    expect(screen.getByText("report.pdf")).toBeInTheDocument();
+
+    deleteDocumentMock.mockResolvedValueOnce(null);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm delete" }),
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByText("report.pdf")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("prevents duplicate delete requests while deletion is pending", async () => {
+    const document = makeDocument();
+
+    listMock.mockResolvedValue([document]);
+
+    let resolveDelete: ((value: null) => void) | undefined;
+
+    deleteDocumentMock.mockImplementation(
+      () =>
+        new Promise<null>((resolve) => {
+          resolveDelete = resolve;
+        }),
+    );
+
+    renderDashboard();
+
+    await screen.findByText("report.pdf");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm delete" }),
+    );
+
+    expect(deleteDocumentMock).toHaveBeenCalledTimes(1);
+
+    resolveDelete?.(null);
+
+    await waitFor(() =>
+      expect(screen.queryByText("report.pdf")).not.toBeInTheDocument(),
     );
   });
 

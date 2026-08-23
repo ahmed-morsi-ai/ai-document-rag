@@ -18,6 +18,11 @@ export function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [showChatCta, setShowChatCta] = useState(false);
+  const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(
+    null,
+  );
+  const [deleteError, setDeleteError] = useState("");
+
 
   const loadDocuments = useCallback(async () => {
     if (!token) {
@@ -61,6 +66,39 @@ export function DashboardPage() {
       ...current,
     ]);
     setShowChatCta(true);
+  }
+
+  function handleDeleteRequest(documentId: string) {
+    setDeleteError("");
+    setDeletingDocumentId(documentId);
+  }
+
+  function handleDeleteCancel() {
+    setDeletingDocumentId(null);
+    setDeleteError("");
+  }
+
+  async function handleDeleteConfirm(documentId: string) {
+    if (!token || deletingDocumentId !== documentId) {
+      return;
+    }
+
+    setDeleteError("");
+
+    try {
+      await documentsApi.delete(token, documentId);
+      setDocuments((current) =>
+        current.filter((document) => document.id !== documentId),
+      );
+      setDeletingDocumentId(null);
+    } catch (err) {
+      setDeleteError(
+        err instanceof ApiError
+          ? err.message
+          : "Unable to delete document. Please try again.",
+      );
+      setDeletingDocumentId(null);
+    }
   }
 
   function handleLogout() {
@@ -126,6 +164,11 @@ export function DashboardPage() {
         documents={documents}
         isLoading={isLoading}
         error={error}
+        deletingDocumentId={deletingDocumentId}
+        deleteError={deleteError}
+        onDeleteRequest={handleDeleteRequest}
+        onDeleteCancel={handleDeleteCancel}
+        onDeleteConfirm={handleDeleteConfirm}
       />
     </main>
   );

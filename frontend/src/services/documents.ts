@@ -91,4 +91,14 @@ export const documentsApi = {
       },
     ) as Promise<DocumentItem>;
   },
+
+  delete(token: string, documentId: string) {
+    return authenticatedRequest(
+      `/documents/${documentId}`,
+      token,
+      {
+        method: "DELETE",
+      },
+    ) as Promise<null>;
+  },
 };

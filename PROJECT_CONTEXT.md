@@ -111,22 +111,20 @@
 - Task 23: Add dashboard and document upload — completed and verified.
 
 ## Current Task
-- Task 25 — Application Workflow.
+- Task 25 — Application Workflow: CLOSED.
 - Batch 1 — Document-to-Chat Workflow Integration: CLOSED.
 - Batch 2A — Provider-Independent Vector Deletion: CLOSED.
 - Batch 2B1 — VectorStore Application Wiring: CLOSED.
 - Batch 2B2 — Safe Backend Document Deletion: CLOSED.
-- Task 24 remains fully closed.
-- Backend document deletion authenticates the user and only resolves documents owned by that user.
-- Deletion orchestrates vector cleanup through the provider-independent `VectorStore` boundary.
-- Stored files are removed through the existing path-safe document storage abstraction.
-- The database record is deleted and committed only after vector and file cleanup succeed.
-- Cleanup is not an atomic distributed transaction across vector storage, filesystem, and database.
-- Vector-cleanup or storage-cleanup failures leave the document database record intact and are surfaced as request failures.
-- Database commit failure is propagated after external cleanup; no compensating rollback is claimed.
-- `DELETE /documents/{document_id}` is implemented as the authenticated backend deletion endpoint.
-- Frontend document deletion is NOT implemented yet.
-- No frontend document API changes were made in Batch 2B2.
+- Batch 2B3 — Frontend Document Deletion Flow: CLOSED.
+- Dashboard document lists now expose a target-specific Delete action with explicit inline confirmation.
+- The frontend uses the existing authenticated typed document API for `DELETE /documents/{document_id}`.
+- Only the selected document enters the deletion-pending state; unrelated documents remain usable.
+- A successful backend deletion removes only the confirmed document from the local document list.
+- Failed deletion preserves the document, clears the pending state, and displays a recoverable user-facing error that allows retry.
+- Existing document upload and document-to-chat workflow remain intact.
+- Backend deletion behavior, VectorStore behavior, storage behavior, and database behavior were not changed in Batch 2B3.
+- No new state-management library, modal framework, or unrelated frontend architecture was added.
 
 ## Next Task
-- Next: Task 25 Frontend Document Deletion Flow.
+- Next: continue with the next confirmed project milestone after Task 25.

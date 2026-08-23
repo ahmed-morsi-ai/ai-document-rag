@@ -114,17 +114,16 @@
 - Task 25 — Application Workflow.
 - Batch 1 — Document-to-Chat Workflow Integration: CLOSED.
 - Batch 2A — Provider-Independent Vector Deletion: CLOSED.
+- Batch 2B1 — VectorStore Application Wiring: CLOSED.
 - Task 24 remains fully closed.
-- `VectorStore` now exposes document-scoped vector deletion through `delete_by_document_id(document_id)`.
-- The Chroma implementation deletes vectors using the existing `document_id` metadata field.
-- Empty document identifiers are rejected.
-- Repeated vector deletion is supported idempotently.
-- Existing vector add/query behavior is unchanged.
-- Document database deletion is NOT implemented in Batch 2A.
-- Stored file deletion is NOT implemented in Batch 2A.
-- `DELETE /documents` is NOT implemented in Batch 2A.
-- The frontend is unchanged in Batch 2A.
-- The new vector deletion capability is the prerequisite for a later safe document-deletion workflow.
+- Application-level code can obtain the existing provider-independent `VectorStore` through `get_vector_store()`.
+- `get_vector_store()` owns the configured `ChromaVectorStore` construction using the existing vector-store settings.
+- Retrieval and document-indexing factories reuse the shared VectorStore factory instead of duplicating Chroma construction.
+- The provider-independent `VectorStore` contract is unchanged.
+- Chroma deletion behavior is unchanged.
+- Safe document deletion is NOT implemented yet.
+- No `DELETE /documents` endpoint exists yet.
+- No frontend document-deletion flow exists yet.
 
 ## Next Task
-- Next: Task 25 Safe Document Deletion.
+- Next: Task 25 Safe Backend Document Deletion.

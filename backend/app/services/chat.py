@@ -1,6 +1,13 @@
 from dataclasses import dataclass
 from uuid import UUID
 
+def _derive_conversation_title(query: str) -> str:
+    normalized = " ".join(query.split())
+    if len(normalized) <= 80:
+        return normalized
+    return f"{normalized[:77].rstrip()}..."
+
+
 from app.services.chat_persistence import ChatPersistenceService
 from app.services.rag import RagService
 
@@ -33,6 +40,7 @@ class ChatService:
             conversation = (
                 await self.persistence_service.create_conversation(
                     owner_id=user_id,
+                    title=_derive_conversation_title(query),
                 )
             )
         else:

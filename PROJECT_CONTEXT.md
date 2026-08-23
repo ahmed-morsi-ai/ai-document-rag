@@ -120,15 +120,15 @@
 - Task 26 — Conversation Management.
 - Batch 1 — Safe Backend Conversation Deletion: CLOSED.
 - Batch 2 — Frontend Conversation Deletion Flow: CLOSED.
-- The protected chat UI now exposes conversation deletion through the existing typed conversation API.
-- Deletion uses inline confirmation rather than a browser confirmation dialog.
-- A conversation remains visible when deletion fails, and the user can retry.
-- Duplicate deletion is prevented while the target DELETE request is in flight.
-- Deleting the active conversation clears its active selection and persisted history from the current UI state.
-- Deleting a non-active conversation leaves the active conversation and its history unchanged.
-- Existing conversation loading, selection, history synchronization, message sending, and authentication behavior remain unchanged.
-- No backend conversation changes were made in this batch.
-- No conversation rename, bulk deletion, soft deletion, or new state-management architecture was added.
+- Task 27 — Conversation Titles: CLOSED.
+- Conversation records now persist an optional 255-character title.
+- New conversations derive a deterministic title from the first user query by normalizing whitespace and truncating long titles to 80 characters including the trailing ellipsis.
+- Existing conversations are never retitled by subsequent messages.
+- The conversation API exposes the stored title through the existing conversation response contract.
+- The frontend conversation list displays the title and uses an "Untitled conversation" fallback for legacy conversations without a title.
+- No LLM, Ollama, or external service is used for title generation.
+- Existing conversation selection, history loading, message persistence, chat/RAG behavior, and conversation deletion remain unchanged.
+- A database migration adds the nullable `conversations.title` column so existing conversation rows remain compatible.
 
 ## Next Task
-- Next: Task 27 — continue only with the next explicitly scoped task.
+- Next: continue only with the next explicitly scoped task.

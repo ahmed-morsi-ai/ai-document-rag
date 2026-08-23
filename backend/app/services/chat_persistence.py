@@ -18,9 +18,11 @@ class ChatPersistenceService:
     async def create_conversation(
         self,
         owner_id: UUID,
+        title: str | None = None,
     ) -> Conversation:
         conversation = Conversation(
             owner_id=owner_id,
+            title=title,
         )
 
         self.db.add(conversation)

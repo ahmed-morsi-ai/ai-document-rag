@@ -41,6 +41,7 @@ class ConversationModelTests(unittest.TestCase):
             {
                 "id",
                 "owner_id",
+                "title",
                 "created_at",
                 "updated_at",
             },
@@ -49,6 +50,8 @@ class ConversationModelTests(unittest.TestCase):
         self.assertTrue(table.c.id.primary_key)
         self.assertFalse(table.c.owner_id.nullable)
         self.assertTrue(table.c.owner_id.index)
+        self.assertTrue(table.c.title.nullable)
+        self.assertEqual(table.c.title.type.length, 255)
         self.assertFalse(table.c.created_at.nullable)
         self.assertFalse(table.c.updated_at.nullable)
 
@@ -202,3 +205,69 @@ class ConversationMigrationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ConversationTitleMigrationTests(unittest.TestCase):
+    MIGRATION_PATH = (
+        Path(__file__).resolve().parents[1]
+        / "alembic"
+        / "versions"
+        / "eab8407d6d14_add_conversation_titles.py"
+    )
+
+    def load_migration(self):
+        spec = importlib.util.spec_from_file_location(
+            "add_conversation_titles_migration",
+            self.MIGRATION_PATH,
+        )
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+        return module
+
+    def test_revision_chain_is_correct(self):
+        migration = self.load_migration()
+
+        self.assertEqual(
+            migration.revision,
+            "eab8407d6d14",
+        )
+        self.assertEqual(
+            migration.down_revision,
+            "d4f7a1b9c2e6",
+        )
+
+    def test_upgrade_adds_nullable_title_column(self):
+        migration = self.load_migration()
+
+        operations = SimpleNamespace(
+            add_column=mock.Mock(),
+            drop_column=mock.Mock(),
+        )
+
+        migration.op = operations
+        migration.upgrade()
+
+        operations.add_column.assert_called_once()
+
+        column = operations.add_column.call_args.args[1]
+
+        self.assertEqual(column.name, "title")
+        self.assertEqual(column.type.length, 255)
+        self.assertTrue(column.nullable)
+
+    def test_downgrade_drops_title_column(self):
+        migration = self.load_migration()
+
+        operations = SimpleNamespace(
+            add_column=mock.Mock(),
+            drop_column=mock.Mock(),
+        )
+
+        migration.op = operations
+        migration.downgrade()
+
+        operations.drop_column.assert_called_once_with(
+            "conversations",
+            "title",
+        )

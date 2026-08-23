@@ -88,7 +88,9 @@ export function ConversationList({
                       }
                       disabled={isDeleting}
                     >
-                      <span>{conversation.id}</span>
+                      <span>
+                        {conversation.title || "Untitled conversation"}
+                      </span>
                     </button>
 
                     {isConfirming ? (

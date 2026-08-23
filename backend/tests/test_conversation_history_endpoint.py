@@ -189,6 +189,7 @@ class ConversationHistoryEndpointTests(unittest.TestCase):
         owned = Conversation(
             id=CONVERSATION_ID,
             owner_id=USER_ID,
+            title="My document questions",
             created_at=datetime(
                 2026,
                 1,
@@ -517,6 +518,7 @@ class ConversationHistoryEndpointTests(unittest.TestCase):
             set(body["conversation"]),
             {
                 "id",
+                "title",
                 "created_at",
                 "updated_at",
             },

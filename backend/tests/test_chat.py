@@ -46,7 +46,7 @@ class FakePersistenceService:
         self.user_message_error = None
         self.assistant_message_error = None
 
-    async def create_conversation(self, owner_id):
+    async def create_conversation(self, owner_id, title=None):
         if self.create_error:
             raise self.create_error
 
@@ -55,11 +55,13 @@ class FakePersistenceService:
             {
                 "operation": "create_conversation",
                 "owner_id": owner_id,
+                "title": title,
             }
         )
 
         class Conversation:
             id = CONVERSATION_ID
+            self.title = title
 
         self.conversation = Conversation()
         return self.conversation
@@ -166,6 +168,81 @@ class ChatServiceTests(unittest.IsolatedAsyncioTestCase):
             self.persistence.events,
         )
 
+    async def test_new_conversation_is_created(self):
+        result = await self.chat_service.chat(
+            user_id=USER_ID,
+            query="hello",
+            top_k=2,
+        )
+
+        self.assertEqual(
+            result,
+            ChatResponse(
+                query="hello",
+                answer="the answer",
+            ),
+        )
+
+        self.assertIn(
+            "create_conversation",
+            self.persistence.events,
+        )
+
+    async def test_new_conversation_derives_a_deterministic_title(self):
+        await self.chat_service.chat(
+            user_id=USER_ID,
+            query="  How   do I upload my PDF?  ",
+        )
+
+        creation = next(
+            call
+            for call in self.persistence.calls
+            if call["operation"] == "create_conversation"
+        )
+
+        self.assertEqual(
+            creation["title"],
+            "How do I upload my PDF?",
+        )
+
+    async def test_long_first_query_is_truncated_deterministically(self):
+        query = "word " * 30
+
+        await self.chat_service.chat(
+            user_id=USER_ID,
+            query=query,
+        )
+
+        creation = next(
+            call
+            for call in self.persistence.calls
+            if call["operation"] == "create_conversation"
+        )
+
+        self.assertEqual(
+            len(creation["title"]),
+            80,
+        )
+        self.assertTrue(creation["title"].endswith("..."))
+        self.assertEqual(
+            creation["title"],
+            f'{" ".join(query.split())[:77]}...',
+        )
+
+    async def test_existing_conversation_does_not_receive_a_new_title(self):
+        await self.chat_service.chat(
+            user_id=USER_ID,
+            query="follow up question",
+            conversation_id=CONVERSATION_ID,
+        )
+
+        creation_calls = [
+            call
+            for call in self.persistence.calls
+            if call["operation"] == "create_conversation"
+        ]
+
+        self.assertEqual(creation_calls, [])
     async def test_existing_conversation_is_reused(self):
         result = await self.chat_service.chat(
             user_id=USER_ID,

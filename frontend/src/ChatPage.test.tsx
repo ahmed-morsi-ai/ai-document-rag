@@ -59,6 +59,7 @@ function renderPage() {
 
 const conversation = {
   id: "22222222-2222-4222-8222-222222222222",
+  title: "22222222-2222-4222-8222-222222222222",
   created_at: "2026-01-02T00:00:00Z",
   updated_at: "2026-01-02T00:00:00Z",
 };
@@ -202,6 +203,44 @@ describe("ChatPage", () => {
     );
   });
 
+  it("renders the conversation title", async () => {
+    getConversationsMock.mockResolvedValueOnce({
+      conversations: [
+        {
+          ...conversation,
+          title: "Document questions",
+        },
+      ],
+    });
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("button", {
+        name: "Document questions",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("falls back when a conversation title is absent", async () => {
+    getConversationsMock.mockResolvedValueOnce({
+      conversations: [
+        {
+          ...conversation,
+          title: null,
+        },
+      ],
+    });
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("button", {
+        name: "Untitled conversation",
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("shows delete confirmation and does not delete when cancelled", async () => {
     getConversationsMock.mockResolvedValueOnce({
       conversations: [conversation],
@@ -239,6 +278,7 @@ describe("ChatPage", () => {
   it("deletes a non-selected conversation without changing the active chat", async () => {
     const conversationB = {
       id: "44444444-4444-4444-8444-444444444444",
+      title: "Second conversation",
       created_at: "2026-01-03T00:00:00Z",
       updated_at: "2026-01-03T00:00:00Z",
     };
@@ -353,6 +393,7 @@ describe("ChatPage", () => {
   it("prevents duplicate deletion and keeps unrelated conversations enabled", async () => {
     const conversationB = {
       id: "44444444-4444-4444-8444-444444444444",
+      title: "Second conversation",
       created_at: "2026-01-03T00:00:00Z",
       updated_at: "2026-01-03T00:00:00Z",
     };
@@ -385,7 +426,7 @@ describe("ChatPage", () => {
 
     const otherConversationButton = screen.getByRole(
       "button",
-      { name: conversationB.id },
+      { name: conversationB.title },
     );
 
     expect(otherConversationButton).not.toBeDisabled();
@@ -763,6 +804,7 @@ describe("ChatPage", () => {
   it("does not let stale history overwrite the newly selected conversation", async () => {
     const conversationB = {
       id: "44444444-4444-4444-8444-444444444444",
+      title: "Second conversation",
       created_at: "2026-01-03T00:00:00Z",
       updated_at: "2026-01-03T00:00:00Z",
     };
@@ -803,7 +845,7 @@ describe("ChatPage", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: conversationB.id,
+        name: conversationB.title,
       }),
     );
 

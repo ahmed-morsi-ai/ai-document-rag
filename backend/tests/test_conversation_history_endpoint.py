@@ -57,6 +57,28 @@ class FakePersistenceService:
 
         raise ValueError("conversation not found")
 
+    async def delete_conversation(
+        self,
+        owner_id,
+        conversation_id,
+    ):
+        conversation = await self.get_conversation(
+            owner_id=owner_id,
+            conversation_id=conversation_id,
+        )
+
+        self.messages = [
+            message
+            for message in self.messages
+            if message.conversation_id != conversation_id
+        ]
+
+        self.conversations = [
+            item
+            for item in self.conversations
+            if item.id != conversation_id
+        ]
+
     async def get_messages(
         self,
         owner_id,
@@ -227,6 +249,58 @@ class ConversationHistoryEndpointTests(unittest.TestCase):
         self.assertNotIn(
             "owner_id",
             body["conversations"][0],
+        )
+
+    def test_delete_conversation_requires_authentication(self):
+        app.dependency_overrides.clear()
+        response = self.client.delete(
+            f"/conversations/{CONVERSATION_ID}",
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_delete_owned_conversation_succeeds(self):
+        conversation = Conversation(
+            id=CONVERSATION_ID,
+            owner_id=USER_ID,
+        )
+        self.persistence.conversations = [conversation]
+
+        response = self.client.delete(
+            f"/conversations/{CONVERSATION_ID}",
+        )
+
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(self.persistence.conversations, [])
+
+    def test_delete_other_users_conversation_returns_404(self):
+        other_owner = UUID(
+            "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        )
+        conversation = Conversation(
+            id=CONVERSATION_ID,
+            owner_id=other_owner,
+        )
+        self.persistence.conversations = [conversation]
+
+        response = self.client.delete(
+            f"/conversations/{CONVERSATION_ID}",
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.json(),
+            {"detail": "Conversation not found"},
+        )
+
+    def test_delete_unknown_conversation_returns_404(self):
+        response = self.client.delete(
+            f"/conversations/{CONVERSATION_ID}",
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.json(),
+            {"detail": "Conversation not found"},
         )
 
     def test_conversation_history_returns_ordered_messages(self):

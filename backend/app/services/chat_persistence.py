@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Conversation, Message
@@ -64,6 +64,24 @@ class ChatPersistenceService:
             raise ValueError("conversation not found")
 
         return conversation
+
+    async def delete_conversation(
+        self,
+        owner_id: UUID,
+        conversation_id: UUID,
+    ) -> None:
+        conversation = await self.get_conversation(
+            owner_id=owner_id,
+            conversation_id=conversation_id,
+        )
+
+        await self.db.execute(
+            delete(Message).where(
+                Message.conversation_id == conversation.id,
+            )
+        )
+        await self.db.delete(conversation)
+        await self.db.commit()
 
     async def append_message(
         self,

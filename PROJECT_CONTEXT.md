@@ -117,14 +117,16 @@
 - Batch 2B1 — VectorStore Application Wiring: CLOSED.
 - Batch 2B2 — Safe Backend Document Deletion: CLOSED.
 - Batch 2B3 — Frontend Document Deletion Flow: CLOSED.
-- Dashboard document lists now expose a target-specific Delete action with explicit inline confirmation.
-- The frontend uses the existing authenticated typed document API for `DELETE /documents/{document_id}`.
-- Only the selected document enters the deletion-pending state; unrelated documents remain usable.
-- A successful backend deletion removes only the confirmed document from the local document list.
-- Failed deletion preserves the document, clears the pending state, and displays a recoverable user-facing error that allows retry.
-- Existing document upload and document-to-chat workflow remain intact.
-- Backend deletion behavior, VectorStore behavior, storage behavior, and database behavior were not changed in Batch 2B3.
-- No new state-management library, modal framework, or unrelated frontend architecture was added.
+- Task 26 — Conversation Management.
+- Batch 1 — Safe Backend Conversation Deletion: CLOSED.
+- `DELETE /conversations/{conversation_id}` is implemented through the existing `ChatPersistenceService`.
+- Conversation ownership is enforced by resolving the conversation using the authenticated user's owner ID.
+- The current Conversation ↔ Message database relationship has no `ondelete` or ORM delete cascade, so associated `Message` rows are explicitly deleted before the `Conversation` row.
+- Conversation deletion commits both message cleanup and conversation deletion in the existing database session boundary.
+- Missing or foreign conversations return `404 Conversation not found`, matching existing conversation-history behavior.
+- Existing conversation listing, history, chat persistence, and message persistence remain unchanged.
+- Frontend conversation deletion is NOT implemented yet.
+- No conversation rename, bulk deletion, soft deletion, or new persistence architecture was added.
 
 ## Next Task
-- Next: continue with the next confirmed project milestone after Task 25.
+- Next: Task 26 Frontend Conversation Deletion Flow.

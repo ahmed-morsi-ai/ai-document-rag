@@ -50,6 +50,28 @@ async def list_conversations(
     )
 
 
+@router.delete(
+    "/{conversation_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_conversation(
+    conversation_id: UUID,
+    current_user: User = Depends(get_current_user),
+    persistence_service: ChatPersistenceService = Depends(
+        get_chat_persistence_service,
+    ),
+):
+    try:
+        await persistence_service.delete_conversation(
+            owner_id=current_user.id,
+            conversation_id=conversation_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found",
+        ) from exc
+
 @router.get(
     "/{conversation_id}/messages",
     response_model=ConversationHistoryResponse,

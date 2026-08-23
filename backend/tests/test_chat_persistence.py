@@ -28,6 +28,8 @@ class ChatPersistenceServiceTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.db = Mock()
 
+        self.db.execute = AsyncMock()
+        self.db.delete = AsyncMock()
         self.db.commit = AsyncMock()
         self.db.refresh = AsyncMock()
 
@@ -185,6 +187,54 @@ class ChatPersistenceServiceTests(unittest.IsolatedAsyncioTestCase):
                     "22222222-2222-4222-8222-222222222222"
                 ),
             )
+
+    async def test_delete_conversation_removes_messages_and_conversation(
+        self,
+    ):
+        owner_id = __import__("uuid").UUID(
+            "11111111-1111-4111-8111-111111111111",
+        )
+        conversation_id = __import__("uuid").UUID(
+            "22222222-2222-4222-8222-222222222222",
+        )
+
+        conversation = Conversation(
+            id=conversation_id,
+            owner_id=owner_id,
+        )
+
+        self.db.execute.side_effect = [
+            AsyncScalarResult(conversation),
+            Mock(),
+        ]
+
+        await self.service.delete_conversation(
+            owner_id=owner_id,
+            conversation_id=conversation_id,
+        )
+
+        self.assertEqual(self.db.execute.await_count, 2)
+        self.db.delete.assert_awaited_once_with(conversation)
+        self.db.commit.assert_awaited_once()
+    async def test_delete_conversation_rejects_missing_or_foreign_conversation(
+        self,
+    ):
+        self.db.execute.return_value = AsyncScalarResult(None)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "conversation not found",
+        ):
+            await self.service.delete_conversation(
+                owner_id=__import__("uuid").UUID(
+                    "11111111-1111-4111-8111-111111111111",
+                ),
+                conversation_id=__import__("uuid").UUID(
+                    "22222222-2222-4222-8222-222222222222",
+                ),
+            )
+
+        self.db.commit.assert_not_awaited()
 
     async def test_append_user_message(self):
         from uuid import UUID

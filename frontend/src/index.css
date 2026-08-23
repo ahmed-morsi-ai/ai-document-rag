@@ -184,6 +184,32 @@ code {
   padding: 16px;
 }
 
+.document-context {
+  border: 1px solid #d9dee7;
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: #fafbfc;
+}
+
+.document-context-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.document-context h2 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.document-context .muted {
+  font-size: 0.9rem;
+}
+
+.document-context button {
+  justify-self: start;
+}
+
 .chat-history {
   min-height: 320px;
   padding: 20px;

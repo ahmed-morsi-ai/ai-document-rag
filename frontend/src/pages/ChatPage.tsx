@@ -7,6 +7,8 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthContext";
+import { documentsApi } from "../services/documents";
+import type { DocumentItem } from "../types/documents";
 import {
   ApiError,
   chatApi,
@@ -47,6 +49,9 @@ export function ChatPage() {
     useState(false);
   const [conversationError, setConversationError] = useState("");
   const [historyError, setHistoryError] = useState("");
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [isDocumentsLoading, setIsDocumentsLoading] = useState(true);
+  const [documentError, setDocumentError] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [sendError, setSendError] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -102,6 +107,59 @@ export function ChatPage() {
   useEffect(() => {
     void loadConversations();
   }, [loadConversations]);
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    const authenticatedToken = token;
+    let cancelled = false;
+
+    async function loadDocuments() {
+      setIsDocumentsLoading(true);
+      setDocumentError("");
+
+      try {
+        const loadedDocuments =
+          await documentsApi.list(authenticatedToken);
+
+        if (cancelled) {
+          return;
+        }
+
+        setDocuments(loadedDocuments);
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+
+        if (
+          err instanceof ApiError &&
+          (err.status === 401 || err.status === 403)
+        ) {
+          handleAuthFailure();
+          return;
+        }
+
+        setDocumentError(
+          err instanceof ApiError
+            ? err.message
+            : "Unable to load document availability.",
+        );
+      } finally {
+        if (!cancelled) {
+          setIsDocumentsLoading(false);
+        }
+      }
+    }
+
+    void loadDocuments();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [handleAuthFailure, token]);
 
   useEffect(() => {
     if (!token || !activeConversationId) {
@@ -180,6 +238,36 @@ export function ChatPage() {
   function invalidateChatOperation() {
     chatOperationRef.current += 1;
     setIsSending(false);
+  }
+
+  async function handleRetryDocuments() {
+    if (!token || isDocumentsLoading) {
+      return;
+    }
+
+    setIsDocumentsLoading(true);
+    setDocumentError("");
+
+    try {
+      const loadedDocuments = await documentsApi.list(token);
+      setDocuments(loadedDocuments);
+    } catch (err) {
+      if (
+        err instanceof ApiError &&
+        (err.status === 401 || err.status === 403)
+      ) {
+        handleAuthFailure();
+        return;
+      }
+
+      setDocumentError(
+        err instanceof ApiError
+          ? err.message
+          : "Unable to load document availability.",
+      );
+    } finally {
+      setIsDocumentsLoading(false);
+    }
   }
 
   function handleSelectConversation(conversationId: string) {
@@ -543,6 +631,51 @@ export function ChatPage() {
         />
 
         <section className="chat-main" aria-label="Chat">
+          <section
+            className="document-context"
+            aria-labelledby="document-context-title"
+          >
+            <div className="document-context-copy">
+              <h2 id="document-context-title">Document context</h2>
+
+              {isDocumentsLoading ? (
+                <p role="status">Loading document availability…</p>
+              ) : documentError ? (
+                <div>
+                  <p role="alert">{documentError}</p>
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => void handleRetryDocuments()}
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : documents.length === 0 ? (
+                <div>
+                  <p>No documents available.</p>
+                  <p className="muted">
+                    Upload a document from the Dashboard to add document
+                    context.
+                  </p>
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => navigate("/app")}
+                  >
+                    Upload a document
+                  </button>
+                </div>
+              ) : (
+                <p>
+                  {documents.length}{" "}
+                  {documents.length === 1 ? "document" : "documents"} available
+                  for your workspace.
+                </p>
+              )}
+            </div>
+          </section>
+
           <ConversationHistory
             messages={messages}
             isLoading={isHistoryLoading}

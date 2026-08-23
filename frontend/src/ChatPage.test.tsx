@@ -4,12 +4,22 @@ import { MemoryRouter } from "react-router-dom";
 
 import { ChatPage } from "./pages/ChatPage";
 import type { ConversationMessage } from "./types/conversations";
+import type { DocumentItem } from "./types/documents";
 
 const getConversationsMock = vi.fn();
 const getConversationMessagesMock = vi.fn();
 const deleteConversationMock = vi.fn();
+const listDocumentsMock = vi.fn();
 const sendMessageMock = vi.fn();
 const logoutMock = vi.fn();
+
+vi.mock("./services/documents", () => ({
+  documentsApi: {
+    list: (...args: unknown[]) => listDocumentsMock(...args),
+    upload: vi.fn(),
+    delete: vi.fn(),
+  },
+}));
 
 vi.mock("./services/api", () => ({
   ApiError: class ApiError extends Error {
@@ -78,15 +88,108 @@ describe("ChatPage", () => {
       conversation,
       messages: [],
     });
+    listDocumentsMock.mockResolvedValue([]);
     deleteConversationMock.mockResolvedValue(undefined);
+  });
+
+  it("shows available document count without blocking chat", async () => {
+    listDocumentsMock.mockResolvedValueOnce([
+      {
+        id: "doc-1",
+        original_filename: "report.pdf",
+        mime_type: "application/pdf",
+        processing_status: "uploaded",
+        created_at: "2026-01-02T00:00:00Z",
+        updated_at: "2026-01-02T00:00:00Z",
+      },
+      {
+        id: "doc-2",
+        original_filename: "notes.txt",
+        mime_type: "text/plain",
+        processing_status: "uploaded",
+        created_at: "2026-01-03T00:00:00Z",
+        updated_at: "2026-01-03T00:00:00Z",
+      },
+    ]);
+
+    renderPage();
+
+    expect(
+      await screen.findByText("2 documents available for your workspace."),
+    ).toBeInTheDocument();
+
+    expect(screen.getByRole("textbox", { name: "Message" })).toBeInTheDocument();
+  });
+
+  it("shows empty document guidance", async () => {
+    listDocumentsMock.mockResolvedValueOnce([]);
+
+    renderPage();
+
+    expect(
+      await screen.findByText("No documents available."),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Upload a document" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows document loading state without blocking chat", async () => {
+    let resolveDocuments!: (documents: DocumentItem[]) => void;
+
+    listDocumentsMock.mockReturnValueOnce(
+      new Promise<DocumentItem[]>((resolve) => {
+        resolveDocuments = resolve;
+      }),
+    );
+
+    renderPage();
+
+    expect(
+      screen.getByText("Loading document availability…"),
+    ).toBeInTheDocument();
+
+    expect(screen.getByRole("textbox", { name: "Message" })).toBeInTheDocument();
+
+    resolveDocuments([]);
+
+    await waitFor(() =>
+      expect(screen.getByText("No documents available.")).toBeInTheDocument(),
+    );
+  });
+
+  it("distinguishes document loading failure from empty documents", async () => {
+    listDocumentsMock.mockRejectedValueOnce(
+      new Error("Document service unavailable"),
+    );
+
+    renderPage();
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Unable to load document availability.",
+      ),
+    );
+
+    expect(screen.queryByText("No documents available.")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Message" })).toBeInTheDocument();
+
+    listDocumentsMock.mockResolvedValueOnce([]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    await waitFor(() =>
+      expect(screen.getByText("No documents available.")).toBeInTheDocument(),
+    );
   });
 
   it("loads conversations once and renders an empty state", async () => {
     renderPage();
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Loading conversations…",
-    );
+    expect(
+      screen.getByText("Loading conversations…"),
+    ).toBeInTheDocument();
 
     await waitFor(() =>
       expect(getConversationsMock).toHaveBeenCalledTimes(1),

@@ -79,7 +79,7 @@ describe("DashboardPage", () => {
     renderDashboard();
 
     expect(
-      screen.getByRole("heading", { name: "Dashboard" }),
+      screen.getByRole("heading", { name: "Documents" }),
     ).toBeInTheDocument();
 
     expect(
@@ -99,7 +99,7 @@ describe("DashboardPage", () => {
     renderDashboard();
 
     await screen.findByText(
-      "No documents uploaded yet. Use the upload area above to add your first document.",
+      "No documents yet",
     );
 
     fireEvent.click(
@@ -150,6 +150,70 @@ describe("DashboardPage", () => {
 
     expect(deleteDocumentMock).not.toHaveBeenCalled();
     expect(screen.getByText("report.pdf")).toBeInTheDocument();
+  });
+
+  it("shows real document metadata in the document workspace", async () => {
+    listMock.mockResolvedValue([
+      makeDocument({
+        original_filename: "contract.docx",
+        mime_type:
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        processing_status: "indexed",
+      }),
+    ]);
+
+    renderDashboard();
+
+    await screen.findByText("contract.docx");
+
+    expect(screen.getAllByText("DOCX").length).toBeGreaterThan(0);
+    expect(screen.getByText("indexed")).toBeInTheDocument();
+    expect(screen.getByText("Uploaded Aug 22, 2026")).toBeInTheDocument();
+  });
+
+  it("shows a target-only deleting state while delete is pending", async () => {
+    const first = makeDocument();
+    const second = makeDocument({
+      id: "doc-2",
+      original_filename: "notes.txt",
+      mime_type: "text/plain",
+    });
+
+    listMock.mockResolvedValue([first, second]);
+
+    let resolveDelete: ((value: null) => void) | undefined;
+
+    deleteDocumentMock.mockImplementation(
+      () =>
+        new Promise<null>((resolve) => {
+          resolveDelete = resolve;
+        }),
+    );
+
+    renderDashboard();
+
+    await screen.findByText("report.pdf");
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Delete" })[0],
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm delete" }),
+    );
+
+    expect(
+      screen.getByRole("status", { name: "" }),
+    ).toHaveTextContent("Deleting…");
+
+    expect(
+      screen.getByText("notes.txt"),
+    ).toBeInTheDocument();
+
+    resolveDelete?.(null);
+
+    await waitFor(() =>
+      expect(screen.queryByText("report.pdf")).not.toBeInTheDocument(),
+    );
   });
 
   it("deletes only the confirmed document", async () => {
@@ -270,7 +334,7 @@ describe("DashboardPage", () => {
     renderDashboard();
 
     await screen.findByText(
-      "No documents uploaded yet. Use the upload area above to add your first document.",
+      "No documents yet",
     );
 
     const input = screen.getByLabelText(
@@ -308,7 +372,7 @@ describe("DashboardPage", () => {
     renderDashboard();
 
     await screen.findByText(
-      "No documents uploaded yet. Use the upload area above to add your first document.",
+      "No documents yet",
     );
 
     fireEvent.click(

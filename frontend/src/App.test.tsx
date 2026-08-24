@@ -188,7 +188,7 @@ describe("frontend authentication foundation", () => {
       </MemoryRouter>,
     );
 
-    await screen.findByRole("heading", { name: "Dashboard" });
+    await screen.findByRole("heading", { name: "Documents" });
 
     fireEvent.click(
       screen.getByRole("link", { name: "Chat" }),
@@ -247,7 +247,7 @@ describe("frontend authentication foundation", () => {
     );
 
     await screen.findByRole("heading", {
-      name: "Dashboard",
+      name: "Documents",
     });
 
     fireEvent.click(
@@ -259,6 +259,50 @@ describe("frontend authentication foundation", () => {
         name: "Sign in",
       }),
     ).toBeInTheDocument();
+  });
+
+  it("toggles between light and dark themes and persists the selection", async () => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, "test-token");
+
+    meMock.mockResolvedValue({
+      id: "user-1",
+      email: "ahmed@example.com",
+      is_active: true,
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/app"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole("heading", { name: "Documents" });
+
+    const toggle = screen.getByRole("button", {
+      name: "Switch to dark mode",
+    });
+
+    expect(document.documentElement.dataset.theme).toBe("light");
+
+    fireEvent.click(toggle);
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe("dark");
+    });
+
+    expect(localStorage.getItem("ai-document-rag-theme")).toBe("dark");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Switch to light mode",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe("light");
+    });
+
+    expect(localStorage.getItem("ai-document-rag-theme")).toBe("light");
   });
 
   it("restores an authenticated user from the persisted token", async () => {
@@ -281,7 +325,7 @@ describe("frontend authentication foundation", () => {
     await waitFor(() => {
       expect(
         screen.getByRole("heading", {
-          name: "Dashboard",
+          name: "Documents",
         }),
       ).toBeInTheDocument();
     });

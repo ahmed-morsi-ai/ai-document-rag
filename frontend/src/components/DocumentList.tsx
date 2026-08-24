@@ -4,6 +4,7 @@ interface DocumentListProps {
   documents: DocumentItem[];
   isLoading: boolean;
   error: string;
+  deleteTargetDocumentId: string | null;
   deletingDocumentId: string | null;
   deleteError: string;
   onDeleteRequest: (documentId: string) => void;
@@ -11,10 +12,43 @@ interface DocumentListProps {
   onDeleteConfirm: (documentId: string) => void;
 }
 
+function formatDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Date unavailable";
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+  }).format(date);
+}
+
+function formatType(document: DocumentItem) {
+  const extension = document.original_filename.includes(".")
+    ? document.original_filename.split(".").pop()?.toUpperCase()
+    : null;
+
+  if (extension) {
+    return extension;
+  }
+
+  return document.mime_type.split("/").pop()?.toUpperCase() || "FILE";
+}
+
+function DocumentIcon({ type }: { type: string }) {
+  return (
+    <div className={`document-type-icon document-type-${type.toLowerCase()}`}>
+      <span>{type === "PDF" ? "PDF" : type}</span>
+    </div>
+  );
+}
+
 export function DocumentList({
   documents,
   isLoading,
   error,
+  deleteTargetDocumentId,
   deletingDocumentId,
   deleteError,
   onDeleteRequest,
@@ -22,70 +56,129 @@ export function DocumentList({
   onDeleteConfirm,
 }: DocumentListProps) {
   return (
-    <section aria-labelledby="document-list-title">
-      <h2 id="document-list-title">Your documents</h2>
+    <section
+      className="document-workspace"
+      aria-labelledby="document-list-title"
+    >
+      <div className="document-workspace-header">
+        <div>
+          <p className="workspace-section-kicker">Library</p>
+          <h2 id="document-list-title">Your documents</h2>
+        </div>
+
+        {!isLoading && !error ? (
+          <span className="document-count">
+            {documents.length} {documents.length === 1 ? "document" : "documents"}
+          </span>
+        ) : null}
+      </div>
 
       {isLoading ? (
-        <p role="status">Loading documents…</p>
+        <div className="document-state document-state-loading" role="status">
+          <div className="document-state-icon" aria-hidden="true">…</div>
+          <div>
+            <strong>Loading your documents</strong>
+            <p>Your workspace is being refreshed.</p>
+          </div>
+        </div>
       ) : null}
 
       {error ? (
-        <p role="alert">{error}</p>
+        <div className="document-state document-state-error" role="alert">
+          <div className="document-state-icon" aria-hidden="true">!</div>
+          <div>
+            <strong>We couldn't load your documents</strong>
+            <p>{error}</p>
+          </div>
+        </div>
       ) : null}
 
       {deleteError ? (
-        <p role="alert">{deleteError}</p>
+        <div className="document-inline-alert" role="alert">
+          {deleteError}
+        </div>
       ) : null}
 
       {!isLoading && !error && documents.length === 0 ? (
-        <div>
-          <p>
-            No documents uploaded yet. Use the upload area above to add your
-            first document.
-          </p>
-          <p>
-            After uploading, use Continue to Chat to start asking questions.
-          </p>
+        <div className="document-state document-state-empty">
+          <div className="document-state-icon" aria-hidden="true">+</div>
+          <div>
+            <strong>No documents yet</strong>
+            <p>
+              Upload a document to get started with your workspace.
+            </p>
+          </div>
         </div>
       ) : null}
 
       {!isLoading && !error && documents.length > 0 ? (
-        <ul>
+        <div className="document-list">
           {documents.map((document) => {
+            const isTarget = deleteTargetDocumentId === document.id;
             const isDeleting = deletingDocumentId === document.id;
+            const type = formatType(document);
 
             return (
-              <li key={document.id}>
-                <strong>{document.original_filename}</strong>
-                <span>{" "}· {document.processing_status}</span>
+              <article
+                className={`document-card${
+                  isDeleting ? " document-card-deleting" : ""
+                }`}
+                key={document.id}
+              >
+                <div className="document-card-main">
+                  <DocumentIcon type={type} />
 
-                {isDeleting ? (
-                  <div>
-                    <p>Delete this document?</p>
-                    <button type="button" onClick={onDeleteCancel}>
-                      Cancel
-                    </button>
+                  <div className="document-card-copy">
+                    <strong className="document-filename">
+                      {document.original_filename}
+                    </strong>
+
+                    <div className="document-metadata">
+                      <span>{type}</span>
+                      <span>Uploaded {formatDate(document.created_at)}</span>
+                      <span>{document.processing_status}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="document-card-actions">
+                  {isDeleting ? (
+                    <span className="document-delete-progress" role="status">
+                      Deleting…
+                    </span>
+                  ) : isTarget ? (
+                    <div className="document-confirmation">
+                      <span>Delete this document?</span>
+                      <button
+                        type="button"
+                        className="secondary document-confirm-cancel"
+                        onClick={onDeleteCancel}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        className="danger-button"
+                        onClick={() => onDeleteConfirm(document.id)}
+                      >
+                        Confirm delete
+                      </button>
+                    </div>
+                  ) : (
                     <button
                       type="button"
-                      onClick={() => onDeleteConfirm(document.id)}
-                      disabled={!deletingDocumentId}
+                      className="document-delete-button"
+                      onClick={() => onDeleteRequest(document.id)}
+                      disabled={Boolean(deletingDocumentId)}
                     >
-                      Confirm delete
+                      Delete
                     </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => onDeleteRequest(document.id)}
-                    disabled={Boolean(deletingDocumentId)}
-                  >
-                    Delete
-                  </button>
-                )}
-              </li>
+                  )}
+                </div>
+              </article>
             );
           })}
-        </ul>
+        </div>
       ) : null}
     </section>
   );

@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent } from "react";
+
 import { ApiError } from "../services/api";
 import { documentsApi } from "../services/documents";
 import type { DocumentItem } from "../types/documents";
@@ -24,9 +25,7 @@ export function DocumentUpload({
   >("idle");
   const [error, setError] = useState("");
 
-  function handleChange(
-    event: ChangeEvent<HTMLInputElement>,
-  ) {
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
 
     setSelectedFile(file);
@@ -76,47 +75,89 @@ export function DocumentUpload({
   }
 
   return (
-    <section aria-labelledby="document-upload-title">
-      <h2 id="document-upload-title">Upload document</h2>
+    <div className="upload-panel">
+      <div className="upload-panel-heading">
+        <div>
+          <p className="workspace-section-kicker">Add to workspace</p>
+          <h2 id="document-upload-title">Upload document</h2>
+          <p>
+            Bring a PDF, DOCX, or TXT file into your document workspace.
+          </p>
+        </div>
 
-      <label htmlFor="document-file">
-        Choose a PDF, DOCX, or TXT file
+        <span className="upload-supported">PDF · DOCX · TXT</span>
+      </div>
+
+      <label
+        className={`upload-drop-area${
+          selectedFile ? " has-file" : ""
+        }`}
+        htmlFor="document-file"
+      >
+        <span className="upload-drop-icon" aria-hidden="true">
+          {selectedFile ? "✓" : "+"}
+        </span>
+
+        <span className="upload-drop-copy">
+          <strong>
+            {selectedFile
+              ? selectedFile.name
+              : "Choose a document to upload"}
+          </strong>
+          <span>
+            {selectedFile
+              ? `${selectedFile.type || "Document"} ready to upload`
+              : "PDF, DOCX, or TXT files are supported"}
+          </span>
+        </span>
+
+        <span className="upload-browse-button">
+          {selectedFile ? "Change file" : "Choose file"}
+        </span>
+
+        <input
+          id="document-file"
+          type="file"
+          aria-label="Choose a PDF, DOCX, or TXT file"
+          accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+          onChange={handleChange}
+          disabled={status === "uploading"}
+        />
       </label>
 
-      <input
-        id="document-file"
-        type="file"
-        accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
-        onChange={handleChange}
-        disabled={status === "uploading"}
-      />
+      <div className="upload-panel-footer">
+        <div className="upload-status-copy" aria-live="polite">
+          {status === "success" ? (
+            <p className="upload-success" role="status">
+              Document uploaded successfully.
+            </p>
+          ) : status === "error" ? (
+            <p className="upload-error" role="alert">
+              {error}
+            </p>
+          ) : selectedFile ? (
+            <p>
+              Review the selected file, then upload it to your workspace.
+            </p>
+          ) : (
+            <p>No document selected yet.</p>
+          )}
+        </div>
 
-      {selectedFile ? (
-        <p>{selectedFile.name}</p>
-      ) : null}
-
-      <button
-        type="button"
-        onClick={handleUpload}
-        disabled={
-          !selectedFile ||
-          status === "uploading"
-        }
-      >
-        {status === "uploading"
-          ? "Uploading…"
-          : "Upload document"}
-      </button>
-
-      {status === "success" ? (
-        <p role="status">
-          Document uploaded successfully.
-        </p>
-      ) : null}
-
-      {status === "error" ? (
-        <p role="alert">{error}</p>
-      ) : null}
-    </section>
+        <button
+          type="button"
+          className="primary upload-submit"
+          onClick={handleUpload}
+          disabled={
+            !selectedFile ||
+            status === "uploading"
+          }
+        >
+          {status === "uploading"
+            ? "Uploading…"
+            : "Upload document"}
+        </button>
+      </div>
+    </div>
   );
 }

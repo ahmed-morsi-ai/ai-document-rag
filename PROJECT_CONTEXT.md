@@ -133,6 +133,9 @@
 - `/app` and `/app/chat` are rendered through the shared shell under the existing ProtectedRoute.
 - The shell uses a centralized neutral design-token system with responsive sidebar behavior and accessible focus states.
 - Task 30 — Dashboard & Documents Redesign: IN PROGRESS.
+- Task 31 — Chat Workspace Redesign: IN PROGRESS.
+- Chat redesign is presentation-only and preserves the existing conversation, history, deletion, document-context, send, loading, error, retry, logout, and navigation behavior.
+- The Chat Workspace uses the shared light/dark theme and Task 29/30 design tokens.
 - Dashboard/Documents visual redesign is presentation-only and reuses the existing document API/contracts.
 - User-selectable Light and Dark themes are implemented through the shared frontend design-token system.
 - Theme preference is persisted locally and initialized from the user's system preference when no saved preference exists.

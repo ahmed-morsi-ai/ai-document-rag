@@ -31,107 +31,157 @@ export function ConversationList({
 }: ConversationListProps) {
   return (
     <aside
-      className="chat-sidebar"
+      className="chat-workspace-sidebar"
       aria-labelledby="conversation-list-title"
     >
-      <div className="chat-sidebar-header">
+      <div className="chat-sidebar-top">
         <div>
-          <p className="eyebrow">Conversations</p>
+          <p className="workspace-section-kicker">Conversations</p>
           <h2 id="conversation-list-title">Your chats</h2>
         </div>
 
-        <button type="button" onClick={onNewConversation}>
-          New conversation
+        <button
+          type="button"
+          className="chat-new-button"
+          onClick={onNewConversation}
+        >
+          <span aria-hidden="true">+</span>
+          New chat
         </button>
       </div>
 
-      {isLoading ? (
-        <p role="status">Loading conversations…</p>
-      ) : null}
+      <div className="chat-sidebar-body">
+        {isLoading ? (
+          <div className="chat-sidebar-state" role="status">
+            <strong>Loading conversations…</strong>
+            <span>Refreshing your chat history…</span>
+          </div>
+        ) : null}
 
-      {error ? (
-        <p role="alert">{error}</p>
-      ) : null}
+        {error ? (
+          <div className="chat-sidebar-alert" role="alert">
+            {error}
+          </div>
+        ) : null}
 
-      {deleteError ? (
-        <p role="alert">{deleteError}</p>
-      ) : null}
+        {deleteError ? (
+          <div className="chat-sidebar-alert" role="alert">
+            {deleteError}
+          </div>
+        ) : null}
 
-      {!isLoading && !error && conversations.length === 0 ? (
-        <p className="muted">No conversations yet.</p>
-      ) : null}
+        {!isLoading && !error && conversations.length === 0 ? (
+          <div className="chat-sidebar-empty">
+            <strong>No conversations yet.</strong>
+            <span>Start a new chat to begin.</span>
+            <button
+              type="button"
+              className="secondary"
+              onClick={onNewConversation}
+            >
+              Start a new chat
+            </button>
+          </div>
+        ) : null}
 
-      {!isLoading && !error && conversations.length > 0 ? (
-        <nav aria-label="Conversations">
-          <ul className="conversation-list">
-            {conversations.map((conversation) => {
-              const isConfirming =
-                deleteTargetConversationId === conversation.id;
-              const isDeleting =
-                deletingConversationId === conversation.id;
+        {!isLoading && !error && conversations.length > 0 ? (
+          <nav aria-label="Conversations">
+            <ul className="chat-conversation-list">
+              {conversations.map((conversation) => {
+                const isActive =
+                  conversation.id === activeConversationId;
+                const isConfirming =
+                  deleteTargetConversationId === conversation.id;
+                const isDeleting =
+                  deletingConversationId === conversation.id;
 
-              return (
-                <li key={conversation.id}>
-                  <div>
-                    <button
-                      type="button"
-                      className={
-                        conversation.id === activeConversationId
-                          ? "conversation-item active"
-                          : "conversation-item"
-                      }
-                      onClick={() => onSelect(conversation.id)}
-                      aria-current={
-                        conversation.id === activeConversationId
-                          ? "true"
-                          : undefined
-                      }
-                      disabled={isDeleting}
+                return (
+                  <li key={conversation.id}>
+                    <div
+                      className={`chat-conversation-row${
+                        isActive ? " is-active" : ""
+                      }${
+                        isDeleting ? " is-deleting" : ""
+                      }`}
                     >
-                      <span>
-                        {conversation.title || "Untitled conversation"}
-                      </span>
-                    </button>
+                      <button
+                        type="button"
+                        className="chat-conversation-button"
+                        onClick={() => onSelect(conversation.id)}
+                        aria-label={
+                          conversation.title ||
+                          "Untitled conversation"
+                        }
+                        aria-current={isActive ? "true" : undefined}
+                        disabled={isDeleting}
+                      >
+                        <span className="chat-conversation-marker" />
+                        <span className="chat-conversation-copy">
+                          <strong>
+                            {conversation.title ||
+                              "Untitled conversation"}
+                          </strong>
+                          <span>Conversation</span>
+                        </span>
+                      </button>
 
-                    {isConfirming ? (
-                      <div>
-                        <p>Delete this conversation?</p>
+                      {isConfirming ? (
+                        <div className="chat-delete-confirmation">
+                          <span>Delete this conversation?</span>
 
+                          <div>
+                            <button
+                              type="button"
+                              className="secondary"
+                              onClick={onDeleteCancel}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              className="danger-button"
+                              onClick={() =>
+                                onDeleteConfirm(conversation.id)
+                              }
+                              disabled={isDeleting}
+                            >
+                              Confirm delete
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
                         <button
                           type="button"
-                          onClick={onDeleteCancel}
-                        >
-                          Cancel
-                        </button>
-
-                        <button
-                          type="button"
+                          className="chat-conversation-delete"
+                          aria-label="Delete"
                           onClick={() =>
-                            onDeleteConfirm(conversation.id)
+                            onDeleteRequest(conversation.id)
                           }
                           disabled={isDeleting}
                         >
-                          Confirm delete
+                          Delete
                         </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onDeleteRequest(conversation.id)
-                        }
-                        disabled={isDeleting}
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-      ) : null}
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        ) : null}
+      </div>
+
+      <div className="chat-sidebar-footer">
+        <div className="chat-sidebar-note">
+          <span className="chat-sidebar-note-dot" aria-hidden="true" />
+          <div>
+            <strong>Document-aware chat</strong>
+            <span>
+              Ask questions using the available workspace context.
+            </span>
+          </div>
+        </div>
+      </div>
     </aside>
   );
 }

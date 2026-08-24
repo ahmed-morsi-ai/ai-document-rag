@@ -590,31 +590,14 @@ export function ChatPage() {
     }
   }
 
+  const activeConversation = conversations.find(
+    (conversation) => conversation.id === activeConversationId,
+  );
+
   return (
-    <main className="chat-page">
-      <header className="chat-header">
-        <div>
-          <p className="eyebrow">AI Document RAG</p>
-          <h1>Chat</h1>
-          <p className="muted">
-            Signed in as <strong>{user?.email}</strong>.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          className="secondary"
-          onClick={() => {
-            invalidateChatOperation();
-            logout();
-            navigate("/login", { replace: true });
-          }}
-        >
-          Log out
-        </button>
-      </header>
-
-      <div className="chat-layout">
+    <div className="chat-page">
+      <section className="chat-workspace">
+        <div className="chat-workspace-main">
         <ConversationList
           conversations={conversations}
           activeConversationId={activeConversationId}
@@ -630,18 +613,75 @@ export function ChatPage() {
           onDeleteConfirm={handleDeleteConfirm}
         />
 
-        <section className="chat-main" aria-label="Chat">
+        <section className="chat-main" aria-label="Chat conversation">
+          <header className="chat-conversation-header">
+            <div className="chat-conversation-heading">
+              <p className="workspace-section-kicker">Conversation</p>
+              <h1>
+                {activeConversation?.title ||
+                  (activeConversationId
+                    ? "Untitled conversation"
+                    : "New conversation")}
+              </h1>
+              <p>
+                {user?.email}
+              </p>
+            </div>
+
+            <div className="chat-header-actions">
+              <div className="chat-header-context">
+                <span className="chat-context-dot" aria-hidden="true" />
+                {isDocumentsLoading ? (
+                  <span role="status">
+                    Loading document availability…
+                  </span>
+                ) : documentError ? (
+                  <span>Document context unavailable</span>
+                ) : documents.length === 0 ? (
+                  <span>No documents available</span>
+                ) : (
+                  <span>
+                    {documents.length}{" "}
+                    {documents.length === 1
+                      ? "document"
+                      : "documents"}{" "}
+                    available
+                  </span>
+                )}
+              </div>
+
+              <button
+                type="button"
+                className="secondary chat-logout-button"
+                onClick={() => {
+                  invalidateChatOperation();
+                  logout();
+                  navigate("/login", { replace: true });
+                }}
+              >
+                Log out
+              </button>
+            </div>
+          </header>
+
           <section
-            className="document-context"
+            className="chat-context-panel"
             aria-labelledby="document-context-title"
           >
-            <div className="document-context-copy">
-              <h2 id="document-context-title">Document context</h2>
+            <div>
+              <p className="workspace-section-kicker">
+                Document context
+              </p>
+              <h2 id="document-context-title">
+                Available workspace context
+              </h2>
 
               {isDocumentsLoading ? (
-                <p role="status">Loading document availability…</p>
+                <p role="status">
+                  Checking available documents…
+                </p>
               ) : documentError ? (
-                <div>
+                <div className="chat-context-inline-error">
                   <p role="alert">{documentError}</p>
                   <button
                     type="button"
@@ -652,12 +692,12 @@ export function ChatPage() {
                   </button>
                 </div>
               ) : documents.length === 0 ? (
-                <div>
+                <div className="chat-context-empty">
                   <p>No documents available.</p>
-                  <p className="muted">
-                    Upload a document from the Dashboard to add document
-                    context.
-                  </p>
+                  <span>
+                    Upload a document from the Dashboard to add
+                    workspace context.
+                  </span>
                   <button
                     type="button"
                     className="secondary"
@@ -667,11 +707,17 @@ export function ChatPage() {
                   </button>
                 </div>
               ) : (
-                <p>
-                  {documents.length}{" "}
-                  {documents.length === 1 ? "document" : "documents"} available
-                  for your workspace.
-                </p>
+                <div className="chat-context-available">
+                  <p>
+                    {documents.length}{" "}
+                    {documents.length === 1 ? "document" : "documents"}{" "}
+                    available for your workspace.
+                  </p>
+                  <span>
+                    Your chat can use the documents currently available
+                    in this workspace.
+                  </span>
+                </div>
               )}
             </div>
           </section>
@@ -697,12 +743,13 @@ export function ChatPage() {
             </h2>
 
             {sendError ? (
-              <div>
-                <p role="alert">{sendError}</p>
+              <div className="chat-send-error" role="alert">
+                <span>{sendError}</span>
 
                 {pendingSynchronization ? (
                   <button
                     type="button"
+                    className="secondary"
                     onClick={() =>
                       void handleRetrySynchronization()
                     }
@@ -714,34 +761,46 @@ export function ChatPage() {
               </div>
             ) : null}
 
-            <textarea
-              aria-label="Message"
-              value={inputValue}
-              onChange={(event) => {
-                setInputValue(event.target.value);
-                setSendError("");
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void handleSendMessage();
-                }
-              }}
-              placeholder="Ask a question about your documents"
-              disabled={isSending}
-              rows={3}
-            />
+            <div className="chat-composer-surface">
+              <textarea
+                aria-label="Message"
+                value={inputValue}
+                onChange={(event) => {
+                  setInputValue(event.target.value);
+                  setSendError("");
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    void handleSendMessage();
+                  }
+                }}
+                placeholder="Ask something about your documents…"
+                disabled={isSending}
+                rows={3}
+              />
 
-            <button
-              type="button"
-              onClick={() => void handleSendMessage()}
-              disabled={!inputValue.trim() || isSending}
-            >
-              {isSending ? "Generating…" : "Send"}
-            </button>
+              <div className="chat-composer-footer">
+                <span>
+                  Enter to send · Shift+Enter for a new line
+                </span>
+
+                <button
+                  type="button"
+                  className="primary chat-send-button"
+                  onClick={() => void handleSendMessage()}
+                  disabled={
+                    !inputValue.trim() || isSending
+                  }
+                >
+                  {isSending ? "Generating…" : "Send"}
+                </button>
+              </div>
+            </div>
           </section>
         </section>
       </div>
-    </main>
+    </section>
+  </div>
   );
 }

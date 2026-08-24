@@ -28,6 +28,7 @@ The currently implemented and verified product includes:
 - Chat-side document availability visibility.
 - A shared authenticated application shell with Chat/Documents navigation, New Chat, active states, logout, and responsive navigation.
 - User-selectable Light and Dark themes with persisted preference.
+- A redesigned Chat Workspace with a conversation sidebar, document-context area, conversation header, message presentation, and responsive composer.
 - A polished Dashboard/Documents workspace with responsive document cards, upload presentation, explicit document states, deletion confirmation, and a clear Document-to-Chat path.
 - Automated frontend and backend regression tests.
 

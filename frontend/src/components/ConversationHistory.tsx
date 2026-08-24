@@ -18,13 +18,18 @@ export function ConversationHistory({
   if (!hasActiveConversation && !hasMessages) {
     return (
       <section
-        className="chat-history"
+        className="chat-history chat-history-empty"
         aria-labelledby="chat-empty-title"
       >
         <div className="chat-empty-state">
+          <div className="chat-empty-mark" aria-hidden="true">
+            +
+          </div>
+          <p className="workspace-section-kicker">Conversation workspace</p>
           <h2 id="chat-empty-title">Start a new conversation</h2>
-          <p className="muted">
-            Select an existing conversation or choose New conversation.
+          <p>
+            Select an existing chat or start a new one. Your composer is ready
+            whenever you are.
           </p>
         </div>
       </section>
@@ -42,26 +47,45 @@ export function ConversationHistory({
       </h2>
 
       {isLoading ? (
-        <p role="status">Loading conversation history…</p>
+        <div className="chat-history-state" role="status">
+          <span className="chat-loading-dot" aria-hidden="true" />
+          Loading conversation history…
+        </div>
       ) : null}
 
       {error ? (
-        <p role="alert">{error}</p>
+        <div className="chat-history-alert" role="alert">
+          {error}
+        </div>
       ) : null}
 
       {!isLoading && !error && !hasMessages ? (
-        <p className="muted">This conversation has no messages yet.</p>
+        <div className="chat-history-empty-message">
+          <strong>This conversation has no messages yet.</strong>
+          <span>Use the composer below to send the first question.</span>
+        </div>
       ) : null}
 
       {!isLoading && !error && hasMessages ? (
-        <ol className="message-list">
+        <ol className="chat-message-list">
           {messages.map((message) => (
             <li
               key={message.id}
-              className={`message message-${message.role}`}
+              className={`chat-message chat-message-${message.role}`}
             >
-              <p className="message-role">{message.role}</p>
-              <p className="message-content">{message.content}</p>
+              <div className="chat-message-meta">
+                <span className="chat-message-role">
+                  {message.role === "assistant"
+                    ? "Assistant"
+                    : "You"}
+                </span>
+              </div>
+
+              <div className="chat-message-surface">
+                <p className="chat-message-content">
+                  {message.content}
+                </p>
+              </div>
             </li>
           ))}
         </ol>

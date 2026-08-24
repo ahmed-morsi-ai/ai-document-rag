@@ -92,6 +92,72 @@ describe("ChatPage", () => {
     deleteConversationMock.mockResolvedValue(undefined);
   });
 
+  it("renders the active conversation title and document context in the workspace", async () => {
+    getConversationsMock.mockResolvedValueOnce({
+      conversations: [
+        {
+          ...conversation,
+          title: "Contract review",
+        },
+      ],
+    });
+
+    listDocumentsMock.mockResolvedValueOnce([
+      {
+        id: "doc-1",
+        original_filename: "contract.pdf",
+        mime_type: "application/pdf",
+        processing_status: "uploaded",
+        created_at: "2026-01-02T00:00:00Z",
+        updated_at: "2026-01-02T00:00:00Z",
+      },
+    ]);
+
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Contract review",
+      }),
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Contract review",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("1 document available"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Your chat can use the documents currently available in this workspace."),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the composer ready in the new conversation state", async () => {
+    renderPage();
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Start a new conversation",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("textbox", {
+        name: "Message",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", {
+        name: "Send",
+      }),
+    ).toBeDisabled();
+  });
+
   it("shows available document count without blocking chat", async () => {
     listDocumentsMock.mockResolvedValueOnce([
       {
@@ -243,7 +309,7 @@ describe("ChatPage", () => {
     await waitFor(() =>
       expect(
         screen.getByRole("button", {
-          name: conversation.id,
+          name: conversation.title,
         }),
       ).toBeInTheDocument(),
     );
@@ -353,7 +419,7 @@ describe("ChatPage", () => {
 
     fireEvent.click(
       await screen.findByRole("button", {
-        name: conversation.id,
+        name: conversation.title,
       }),
     );
 
@@ -407,7 +473,7 @@ describe("ChatPage", () => {
 
     fireEvent.click(
       await screen.findByRole("button", {
-        name: conversation.id,
+        name: conversation.title,
       }),
     );
 
@@ -460,7 +526,7 @@ describe("ChatPage", () => {
 
     fireEvent.click(
       await screen.findByRole("button", {
-        name: conversation.id,
+        name: conversation.title,
       }),
     );
 
@@ -515,7 +581,7 @@ describe("ChatPage", () => {
     renderPage();
 
     await screen.findByRole("button", {
-      name: conversation.id,
+      name: conversation.title,
     });
 
     fireEvent.click(
@@ -555,7 +621,7 @@ describe("ChatPage", () => {
     renderPage();
 
     await screen.findByRole("button", {
-      name: conversation.id,
+      name: conversation.title,
     });
 
     fireEvent.click(
@@ -621,7 +687,7 @@ describe("ChatPage", () => {
     const callCountBeforeNew = getConversationMessagesMock.mock.calls.length;
 
     fireEvent.click(
-      screen.getByRole("button", { name: "New conversation" }),
+      screen.getByRole("button", { name: "New chat" }),
     );
 
     expect(
@@ -678,7 +744,7 @@ describe("ChatPage", () => {
 
     fireEvent.click(
       await screen.findByRole("button", {
-        name: conversation.id,
+        name: conversation.title,
       }),
     );
 
@@ -942,7 +1008,7 @@ describe("ChatPage", () => {
 
     fireEvent.click(
       await screen.findByRole("button", {
-        name: conversation.id,
+        name: conversation.title,
       }),
     );
 
@@ -1026,7 +1092,7 @@ describe("ChatPage", () => {
 
     fireEvent.click(
       await screen.findByRole("button", {
-        name: conversation.id,
+        name: conversation.title,
       }),
     );
 

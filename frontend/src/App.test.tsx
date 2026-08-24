@@ -91,7 +91,7 @@ describe("frontend authentication foundation", () => {
     );
 
     expect(
-      await screen.findByRole("heading", { name: "Chat" }),
+      await screen.findByRole("heading", { name: "New conversation" }),
     ).toBeInTheDocument();
   });
 
@@ -160,7 +160,7 @@ describe("frontend authentication foundation", () => {
       </MemoryRouter>,
     );
 
-    await screen.findByRole("heading", { name: "Chat" });
+    await screen.findByRole("heading", { name: "New conversation" });
 
     expect(
       screen.getByRole("link", { name: "Chat" }),
@@ -195,7 +195,7 @@ describe("frontend authentication foundation", () => {
     );
 
     expect(
-      await screen.findByRole("heading", { name: "Chat" }),
+      await screen.findByRole("heading", { name: "New conversation" }),
     ).toBeInTheDocument();
   });
 

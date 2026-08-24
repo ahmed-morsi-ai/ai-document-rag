@@ -132,15 +132,14 @@
 - The shared authenticated shell owns top-level application navigation, New Chat, authenticated user context, and logout.
 - `/app` and `/app/chat` are rendered through the shared shell under the existing ProtectedRoute.
 - The shell uses a centralized neutral design-token system with responsive sidebar behavior and accessible focus states.
-- Task 30 — Dashboard & Documents Redesign: IN PROGRESS.
-- Task 31 — Chat Workspace Redesign: IN PROGRESS.
+- Task 30 — Dashboard & Documents Redesign: CLOSED.
+- Task 31 — Chat Workspace Redesign: CLOSED.
 - Chat redesign is presentation-only and preserves the existing conversation, history, deletion, document-context, send, loading, error, retry, logout, and navigation behavior.
 - The Chat Workspace uses the shared light/dark theme and Task 29/30 design tokens.
 - Dashboard/Documents visual redesign is presentation-only and reuses the existing document API/contracts.
 - User-selectable Light and Dark themes are implemented through the shared frontend design-token system.
 - Theme preference is persisted locally and initialized from the user's system preference when no saved preference exists.
 - The redesign covers the Dashboard workspace, document list/cards, upload experience, document deletion presentation, empty/loading/error states, Document-to-Chat CTA presentation, and responsive behavior.
-- Chat visual redesign is NOT part of Task 30 and remains reserved for Task 31.
 
 ## Next Task
-- Complete Task 30 verification, manual visual review, README synchronization, and its isolated commit.
+- Task 32 — Accessibility & Responsive QA: IN PROGRESS.

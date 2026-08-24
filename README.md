@@ -434,7 +434,6 @@ Current limitations include:
 - OCR and scanned-document processing are not part of the current verified feature set.
 - Bulk document deletion, document search, and document pagination are not implemented.
 - Conversation search and pagination are not implemented.
-- Deeper Chat Workspace visual redesign remains a separate future task.
 - Production observability, distributed background processing, and large-scale operational infrastructure are outside the current scope.
 
 ## Repository Structure

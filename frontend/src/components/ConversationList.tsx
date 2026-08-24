@@ -153,7 +153,10 @@ export function ConversationList({
                         <button
                           type="button"
                           className="chat-conversation-delete"
-                          aria-label="Delete"
+                          aria-label={`Delete ${
+                            conversation.title ||
+                            "Untitled conversation"
+                          }`}
                           onClick={() =>
                             onDeleteRequest(conversation.id)
                           }

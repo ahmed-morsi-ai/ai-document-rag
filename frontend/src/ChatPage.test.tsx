@@ -410,6 +410,39 @@ describe("ChatPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("gives each conversation delete control a meaningful accessible name", async () => {
+    const conversationB = {
+      id: "44444444-4444-4444-8444-444444444444",
+      title: "Second conversation",
+      created_at: "2026-01-03T00:00:00Z",
+      updated_at: "2026-01-03T00:00:00Z",
+    };
+
+    getConversationsMock.mockResolvedValueOnce({
+      conversations: [conversation, conversationB],
+    });
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("button", {
+        name: `Delete ${conversation.title}`,
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", {
+        name: `Delete ${conversationB.title}`,
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getAllByRole("button", {
+        name: /^Delete /,
+      }),
+    ).toHaveLength(2);
+  });
+
   it("shows delete confirmation and does not delete when cancelled", async () => {
     getConversationsMock.mockResolvedValueOnce({
       conversations: [conversation],
@@ -424,7 +457,9 @@ describe("ChatPage", () => {
     );
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Delete" }),
+      screen.getByRole("button", {
+        name: `Delete ${conversation.title}`,
+      }),
     );
 
     expect(
@@ -482,7 +517,9 @@ describe("ChatPage", () => {
     );
 
     fireEvent.click(
-      screen.getAllByRole("button", { name: "Delete" })[1],
+      screen.getByRole("button", {
+        name: `Delete ${conversationB.title}`,
+      }),
     );
     fireEvent.click(
       screen.getByRole("button", { name: "Confirm delete" }),
@@ -535,7 +572,9 @@ describe("ChatPage", () => {
     );
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Delete" }),
+      screen.getByRole("button", {
+        name: `Delete ${conversation.title}`,
+      }),
     );
     fireEvent.click(
       screen.getByRole("button", { name: "Confirm delete" }),
@@ -585,7 +624,9 @@ describe("ChatPage", () => {
     });
 
     fireEvent.click(
-      screen.getAllByRole("button", { name: "Delete" })[0],
+      screen.getByRole("button", {
+        name: `Delete ${conversation.title}`,
+      }),
     );
     fireEvent.click(
       screen.getByRole("button", { name: "Confirm delete" }),
@@ -625,7 +666,9 @@ describe("ChatPage", () => {
     });
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Delete" }),
+      screen.getByRole("button", {
+        name: `Delete ${conversation.title}`,
+      }),
     );
     fireEvent.click(
       screen.getByRole("button", { name: "Confirm delete" }),
@@ -644,7 +687,9 @@ describe("ChatPage", () => {
     deleteConversationMock.mockResolvedValueOnce(undefined);
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Delete" }),
+      screen.getByRole("button", {
+        name: `Delete ${conversation.title}`,
+      }),
     );
     fireEvent.click(
       screen.getByRole("button", { name: "Confirm delete" }),

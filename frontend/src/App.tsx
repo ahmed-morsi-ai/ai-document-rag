@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { ChatPage } from "./pages/ChatPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { AppShellPage } from "./pages/AppShellPage";
 import { RegisterPage } from "./pages/RegisterPage";
 
 export default function App() {
@@ -15,8 +16,10 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/app" element={<DashboardPage />} />
-          <Route path="/app/chat" element={<ChatPage />} />
+          <Route element={<AppShellPage />}>
+            <Route path="/app" element={<DashboardPage />} />
+            <Route path="/app/chat" element={<ChatPage />} />
+          </Route>
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -128,6 +128,14 @@
 - Empty document state provides a direct path back to the Dashboard for document upload.
 - Existing typed documents API is reused; no new backend endpoint was added.
 - No document selection, filtering, polling, RAG, retrieval, embedding, LLM, or backend workflow changes were introduced.
+- Task 29 — UI Design System & Application Shell: IN PROGRESS.
+- The shared authenticated shell now owns top-level application navigation, New Chat, authenticated user context, and logout.
+- `/app` and `/app/chat` are rendered through the shared shell under the existing ProtectedRoute.
+- The shell uses a small centralized neutral design-token system with responsive sidebar behavior and accessible focus states.
+- Dashboard/Documents visual redesign is intentionally NOT complete in Task 29.
+- Chat workspace visual redesign is intentionally NOT complete in Task 29.
+- Task 30 is reserved for Dashboard/Documents redesign.
+- Task 31 is reserved for Chat Workspace redesign.
 
 ## Next Task
-- Next: continue only with the next explicitly scoped task.
+- Complete Task 29 verification, then create its isolated commit.

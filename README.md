@@ -18,6 +18,7 @@ The currently implemented and verified product includes:
 - Persistent vector storage with document-scoped deletion.
 - Semantic retrieval with configurable top-k results.
 - Provider-independent RAG context construction.
+- Backend Chat/RAG responses expose deterministic, provider-independent source evidence derived from retrieval results.
 - LLM answer generation through the LLM provider abstraction with an Ollama implementation.
 - PostgreSQL-backed conversation and message persistence.
 - Ordered conversation history.
@@ -159,7 +160,9 @@ Generated Answer
 
 The current implementation uses deterministic 1,000-character chunks with 100-character overlap and the `all-MiniLM-L6-v2` embedding model.
 
-The application-facing retrieval and generation boundaries remain provider-independent.
+The application-facing retrieval and generation boundaries remain provider-independent. The backend Chat/RAG response contract exposes source evidence derived directly from retrieved results using `text`, `document_id`, `chunk_index`, `distance`, and `metadata`. Source order follows retrieval order, and empty retrieval produces an empty `sources` collection.
+
+Frontend source/citation UI is not implemented yet.
 
 ## Authentication
 

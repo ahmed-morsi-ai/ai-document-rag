@@ -2,6 +2,7 @@ import unittest
 from uuid import UUID
 
 from app.services.chat import ChatResponse, ChatService
+from app.services.retrieval import RetrievalResult
 
 
 USER_ID = UUID("11111111-1111-4111-8111-111111111111")
@@ -9,8 +10,23 @@ CONVERSATION_ID = UUID("22222222-2222-4222-8222-222222222222")
 
 
 class FakeRagService:
-    def __init__(self, answer="generated answer"):
+    def __init__(self, answer="generated answer", sources=None):
         self.answer = answer
+        self.sources = list(
+            sources
+            or [
+                RetrievalResult(
+                    text="first chunk",
+                    document_id="document-1",
+                    chunk_index=0,
+                    distance=0.1,
+                    metadata={
+                        "document_id": "document-1",
+                        "chunk_index": "0",
+                    },
+                )
+            ]
+        )
         self.calls = []
 
     def generate_answer(self, query, top_k=5):
@@ -22,10 +38,11 @@ class FakeRagService:
         )
 
         class FakeRagResponse:
-            def __init__(self, answer):
+            def __init__(self, answer, sources):
                 self.answer = answer
+                self.sources = sources
 
-        return FakeRagResponse(self.answer)
+        return FakeRagResponse(self.answer, list(self.sources))
 
 
 class FakePersistenceService:
@@ -138,8 +155,22 @@ class FakePersistenceService:
 
 class ChatServiceTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
+        self.fake_sources = [
+            RetrievalResult(
+                text="first chunk",
+                document_id="document-1",
+                chunk_index=0,
+                distance=0.1,
+                metadata={
+                    "document_id": "document-1",
+                    "chunk_index": "0",
+                },
+            ),
+        ]
+
         self.rag_service = FakeRagService(
             answer="the answer",
+            sources=self.fake_sources,
         )
         self.persistence = FakePersistenceService()
 
@@ -160,6 +191,7 @@ class ChatServiceTests(unittest.IsolatedAsyncioTestCase):
             ChatResponse(
                 query="hello",
                 answer="the answer",
+                sources=self.fake_sources,
             ),
         )
 
@@ -180,6 +212,7 @@ class ChatServiceTests(unittest.IsolatedAsyncioTestCase):
             ChatResponse(
                 query="hello",
                 answer="the answer",
+                sources=self.fake_sources,
             ),
         )
 
@@ -436,6 +469,15 @@ class ChatServiceTests(unittest.IsolatedAsyncioTestCase):
             self.rag_service.calls,
             [],
         )
+
+    async def test_sources_are_preserved_in_chat_response(self):
+        result = await self.chat_service.chat(
+            user_id=USER_ID,
+            query="hello",
+            top_k=2,
+        )
+
+        self.assertEqual(result.sources, self.fake_sources)
 
     async def test_repeated_deterministic_calls_preserve_behavior(self):
         first = await self.chat_service.chat(

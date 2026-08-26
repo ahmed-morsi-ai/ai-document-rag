@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.api.dependencies.auth import get_current_user
 from app.db.models import User
-from app.schemas.chat import ChatRequest, ChatResponse
+from app.schemas.chat import ChatRequest, ChatResponse, ChatSource
 from app.services.chat import ChatService
 from app.services.chat_factory import get_chat_service
 
@@ -32,4 +32,14 @@ async def chat(
     return ChatResponse(
         query=response.query,
         answer=response.answer,
+        sources=[
+            ChatSource(
+                text=source.text,
+                document_id=source.document_id,
+                chunk_index=source.chunk_index,
+                distance=source.distance,
+                metadata=dict(source.metadata),
+            )
+            for source in response.sources
+        ],
     )

@@ -140,6 +140,12 @@
 - User-selectable Light and Dark themes are implemented through the shared frontend design-token system.
 - Theme preference is persisted locally and initialized from the user's system preference when no saved preference exists.
 - The redesign covers the Dashboard workspace, document list/cards, upload experience, document deletion presentation, empty/loading/error states, Document-to-Chat CTA presentation, and responsive behavior.
+- Task 32 — Accessibility & Responsive QA: CLOSED.
+- Task 33 — Batch 1 — RAG Source Contract: CLOSED.
+- `RagResponse` exposes the existing ordered `RetrievalResult` evidence as `sources`.
+- `ChatResponse` exposes provider-independent source evidence with `text`, `document_id`, `chunk_index`, `distance`, and `metadata`.
+- Source ordering follows retrieval ordering, empty retrieval produces `sources=[]`, and no provider-specific Chroma/Ollama data is exposed.
+- Frontend source/citation UI is NOT implemented yet.
 
 ## Next Task
-- Task 32 — Accessibility & Responsive QA: IN PROGRESS.
+- Task 33 — Batch 2 — Frontend Source/Citation Presentation: NOT STARTED.

@@ -284,6 +284,7 @@ class RagServiceTests(unittest.TestCase):
                     "second chunk"
                 ),
                 context=first.context,
+                sources=first.sources,
             ),
         )
         self.assertEqual(first, second)

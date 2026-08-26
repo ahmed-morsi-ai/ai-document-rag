@@ -16,6 +16,7 @@ class RagResponse:
     query: str
     answer: str
     context: RagContext
+    sources: list[RetrievalResult]
 
 
 class RagService:
@@ -74,4 +75,5 @@ class RagService:
             query=query,
             answer=answer,
             context=context,
+            sources=list(context.sources),
         )

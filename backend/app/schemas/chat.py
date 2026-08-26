@@ -17,6 +17,15 @@ class ChatRequest(BaseModel):
         return value
 
 
+class ChatSource(BaseModel):
+    text: str
+    document_id: str
+    chunk_index: int
+    distance: float
+    metadata: dict[str, str]
+
+
 class ChatResponse(BaseModel):
     query: str
     answer: str
+    sources: list[ChatSource]

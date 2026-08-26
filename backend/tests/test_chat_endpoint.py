@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 from app.api.dependencies.auth import get_current_user
 from app.api.routes.chat import router as chat_router
 from app.main import app
+from app.schemas.chat import ChatSource
 from app.services.chat import ChatResponse
 from app.services.chat_factory import get_chat_service
 
@@ -29,10 +30,21 @@ class ChatEndpointTests(unittest.TestCase):
         )
 
         self.fake_chat_service = mock.Mock()
+        self.fake_source = ChatSource(
+            text="first chunk",
+            document_id="document-1",
+            chunk_index=0,
+            distance=0.1,
+            metadata={
+                "document_id": "document-1",
+                "chunk_index": "0",
+            },
+        )
         self.fake_chat_service.chat = AsyncMock(
             return_value=ChatResponse(
                 query="hello",
                 answer="hello answer",
+                sources=[self.fake_source],
             )
         )
 
@@ -100,6 +112,18 @@ class ChatEndpointTests(unittest.TestCase):
             {
                 "query": "hello",
                 "answer": "hello answer",
+                "sources": [
+                    {
+                        "text": "first chunk",
+                        "document_id": "document-1",
+                        "chunk_index": 0,
+                        "distance": 0.1,
+                        "metadata": {
+                            "document_id": "document-1",
+                            "chunk_index": "0",
+                        },
+                    }
+                ],
             },
         )
 
@@ -182,7 +206,24 @@ class ChatEndpointTests(unittest.TestCase):
             {
                 "query",
                 "answer",
+                "sources",
             },
+        )
+
+        self.assertEqual(
+            body["sources"],
+            [
+                {
+                    "text": "first chunk",
+                    "document_id": "document-1",
+                    "chunk_index": 0,
+                    "distance": 0.1,
+                    "metadata": {
+                        "document_id": "document-1",
+                        "chunk_index": "0",
+                    },
+                }
+            ],
         )
 
         self.assertNotIn(

@@ -10,12 +10,14 @@ def _derive_conversation_title(query: str) -> str:
 
 from app.services.chat_persistence import ChatPersistenceService
 from app.services.rag import RagService
+from app.services.retrieval import RetrievalResult
 
 
 @dataclass(frozen=True)
 class ChatResponse:
     query: str
     answer: str
+    sources: list[RetrievalResult]
 
 
 class ChatService:
@@ -91,6 +93,7 @@ class ChatService:
         return ChatResponse(
             query=query,
             answer=rag_response.answer,
+            sources=list(rag_response.sources),
         )
 
 

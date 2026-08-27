@@ -117,7 +117,7 @@
 - Batch 2B1 — VectorStore Application Wiring: CLOSED.
 - Batch 2B2 — Safe Backend Document Deletion: CLOSED.
 - Batch 2B3 — Frontend Document Deletion Flow: CLOSED.
-- Task 26 — Conversation Management.
+- Task 26 — Conversation Management: CLOSED.
 - Batch 1 — Safe Backend Conversation Deletion: CLOSED.
 - Batch 2 — Frontend Conversation Deletion Flow: CLOSED.
 - Task 27 — Conversation Titles: CLOSED.
@@ -141,11 +141,28 @@
 - Theme preference is persisted locally and initialized from the user's system preference when no saved preference exists.
 - The redesign covers the Dashboard workspace, document list/cards, upload experience, document deletion presentation, empty/loading/error states, Document-to-Chat CTA presentation, and responsive behavior.
 - Task 32 — Accessibility & Responsive QA: CLOSED.
-- Task 33 — Batch 1 — RAG Source Contract: CLOSED.
-- `RagResponse` exposes the existing ordered `RetrievalResult` evidence as `sources`.
-- `ChatResponse` exposes provider-independent source evidence with `text`, `document_id`, `chunk_index`, `distance`, and `metadata`.
-- Source ordering follows retrieval ordering, empty retrieval produces `sources=[]`, and no provider-specific Chroma/Ollama data is exposed.
-- Frontend source/citation UI is NOT implemented yet.
+- Task 33 — RAG Source Transparency: CLOSED.
+- Batch 1 — RAG Source Contract: CLOSED.
+- Batch 2 — Frontend RAG Source / Citation UI: CLOSED.
+- The verified source pipeline is:
+  RetrievalResult[]
+      ↓
+  RagContext.sources
+      ↓
+  RagResponse.sources
+      ↓
+  ChatResponse.sources
+      ↓
+  HTTP ChatResponse.sources
+      ↓
+  Frontend source display
+- Frontend source display uses only the verified backend source fields: `text`, `document_id`, `chunk_index`, `distance`, and `metadata`.
+- Source data is derived directly from actual retrieval results.
+- No fabricated page numbers, URLs, or confidence scores are presented.
+- No provider-specific source data is exposed to frontend consumers.
+- Source order follows backend retrieval order.
+- Empty retrieval produces an empty source collection with no fabricated source.
+- Frontend source display is implemented in the Chat workspace.
 
 ## Next Task
-- Task 33 — Batch 2 — Frontend Source/Citation Presentation: NOT STARTED.
+- Task 34 — RAG Evaluation & Quality Measurement: NOT STARTED.

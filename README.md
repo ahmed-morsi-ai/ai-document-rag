@@ -162,7 +162,7 @@ The current implementation uses deterministic 1,000-character chunks with 100-ch
 
 The application-facing retrieval and generation boundaries remain provider-independent. The backend Chat/RAG response contract exposes source evidence derived directly from retrieved results using `text`, `document_id`, `chunk_index`, `distance`, and `metadata`. Source order follows retrieval order, and empty retrieval produces an empty `sources` collection.
 
-Frontend source/citation UI is not implemented yet.
+The frontend Chat workspace displays retrieved RAG source evidence using only the verified backend source fields.
 
 ## Authentication
 

@@ -32,6 +32,7 @@ class OllamaLLMProvider(LLMProvider):
                 "model": self.model_name,
                 "prompt": prompt,
                 "stream": False,
+                "think": False,
             },
             timeout=self.timeout,
         )

@@ -47,6 +47,7 @@ describe("chat API client", () => {
           JSON.stringify({
             query: "hello",
             answer: "hello answer",
+            sources: [],
           }),
           {
             status: 200,

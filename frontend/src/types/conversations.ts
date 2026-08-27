@@ -22,6 +22,17 @@ export interface ConversationHistoryResponse {
   messages: ConversationMessage[];
 }
 
+export interface ChatSource {
+  text: string;
+  document_id: string;
+  chunk_index: number;
+  distance: number;
+  metadata: Record<string, string>;
+}
+
+export interface ChatMessage extends ConversationMessage {
+  sources?: ChatSource[];
+}
 
 export interface ChatRequest {
   query: string;
@@ -32,4 +43,5 @@ export interface ChatRequest {
 export interface ChatResponse {
   query: string;
   answer: string;
+  sources: ChatSource[];
 }

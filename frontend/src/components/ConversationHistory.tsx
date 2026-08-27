@@ -1,7 +1,7 @@
-import type { ConversationMessage } from "../types/conversations";
+import type { ChatMessage } from "../types/conversations";
 
 interface ConversationHistoryProps {
-  messages: ConversationMessage[];
+  messages: ChatMessage[];
   isLoading: boolean;
   error: string;
   hasActiveConversation: boolean;
@@ -85,6 +85,49 @@ export function ConversationHistory({
                 <p className="chat-message-content">
                   {message.content}
                 </p>
+
+                {message.role === "assistant" &&
+                message.sources &&
+                message.sources.length > 0 ? (
+                  <section
+                    className="chat-message-sources"
+                    aria-labelledby={`chat-sources-${message.id}`}
+                  >
+                    <div className="chat-source-title-row">
+                      <h3 id={`chat-sources-${message.id}`}>
+                        Sources
+                      </h3>
+                      <span>
+                        {message.sources.length}{" "}
+                        {message.sources.length === 1
+                          ? "source"
+                          : "sources"}
+                      </span>
+                    </div>
+
+                    <ol className="chat-source-list">
+                      {message.sources.map((source, index) => (
+                        <li
+                          key={`${source.document_id}-${source.chunk_index}-${index}`}
+                          className="chat-source-item"
+                        >
+                          <div className="chat-source-heading">
+                            <strong>
+                              Document {source.document_id}
+                            </strong>
+                            <span>
+                              Chunk {source.chunk_index}
+                            </span>
+                          </div>
+
+                          <p className="chat-source-preview">
+                            {source.text}
+                          </p>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                ) : null}
               </div>
             </li>
           ))}

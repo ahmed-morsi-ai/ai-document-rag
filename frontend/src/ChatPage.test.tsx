@@ -80,6 +80,7 @@ describe("ChatPage", () => {
     sendMessageMock.mockResolvedValue({
       query: "hello",
       answer: "hello answer",
+      sources: [],
     });
     getConversationsMock.mockResolvedValue({
       conversations: [],
@@ -820,6 +821,7 @@ describe("ChatPage", () => {
     let resolveSend!: (value: {
       query: string;
       answer: string;
+      sources: [];
     }) => void;
 
     sendMessageMock.mockReturnValueOnce(
@@ -859,6 +861,7 @@ describe("ChatPage", () => {
     resolveSend({
       query: "pending question",
       answer: "generated answer",
+      sources: [],
     });
 
     await waitFor(() =>
@@ -916,6 +919,144 @@ describe("ChatPage", () => {
       "test-token",
       conversation.id,
     );
+  });
+
+  it("renders multiple retrieved sources in backend order", async () => {
+    sendMessageMock.mockResolvedValueOnce({
+      query: "hello",
+      answer: "hello answer",
+      sources: [
+        {
+          text: "first retrieved chunk",
+          document_id: "document-1",
+          chunk_index: 4,
+          distance: 0.1,
+          metadata: {
+            document_id: "document-1",
+            chunk_index: "4",
+          },
+        },
+        {
+          text: "second retrieved chunk",
+          document_id: "document-2",
+          chunk_index: 8,
+          distance: 0.2,
+          metadata: {
+            document_id: "document-2",
+            chunk_index: "8",
+          },
+        },
+      ],
+    });
+
+    getConversationsMock
+      .mockResolvedValueOnce({ conversations: [] })
+      .mockResolvedValueOnce({ conversations: [conversation] });
+
+    getConversationMessagesMock.mockResolvedValueOnce({
+      conversation,
+      messages: [
+        {
+          id: "message-user",
+          role: "user",
+          content: "hello",
+          sequence_number: 1,
+          created_at: "2026-01-02T00:00:00Z",
+        },
+        {
+          id: "message-assistant",
+          role: "assistant",
+          content: "hello answer",
+          sequence_number: 2,
+          created_at: "2026-01-02T00:01:00Z",
+        },
+      ],
+    });
+
+    renderPage();
+
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Message" }),
+      { target: { value: "hello" } },
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Send" }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByText("hello answer")).toBeInTheDocument(),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Sources" }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("Document document-1")).toBeInTheDocument();
+    expect(screen.getByText("Chunk 4")).toBeInTheDocument();
+    expect(screen.getByText("first retrieved chunk")).toBeInTheDocument();
+
+    expect(screen.getByText("Document document-2")).toBeInTheDocument();
+    expect(screen.getByText("Chunk 8")).toBeInTheDocument();
+    expect(screen.getByText("second retrieved chunk")).toBeInTheDocument();
+
+    const sourceTexts = screen.getAllByText(
+      /first retrieved chunk|second retrieved chunk/,
+    );
+
+    expect(sourceTexts[0]).toHaveTextContent("first retrieved chunk");
+    expect(sourceTexts[1]).toHaveTextContent("second retrieved chunk");
+  });
+
+  it("does not render a source section for an empty source list", async () => {
+    sendMessageMock.mockResolvedValueOnce({
+      query: "hello",
+      answer: "hello answer",
+      sources: [],
+    });
+
+    getConversationsMock
+      .mockResolvedValueOnce({ conversations: [] })
+      .mockResolvedValueOnce({ conversations: [conversation] });
+
+    getConversationMessagesMock.mockResolvedValueOnce({
+      conversation,
+      messages: [
+        {
+          id: "message-user",
+          role: "user",
+          content: "hello",
+          sequence_number: 1,
+          created_at: "2026-01-02T00:00:00Z",
+        },
+        {
+          id: "message-assistant",
+          role: "assistant",
+          content: "hello answer",
+          sequence_number: 2,
+          created_at: "2026-01-02T00:01:00Z",
+        },
+      ],
+    });
+
+    renderPage();
+
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Message" }),
+      { target: { value: "hello" } },
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Send" }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByText("hello answer")).toBeInTheDocument(),
+    );
+
+    expect(
+      screen.queryByRole("heading", { name: "Sources" }),
+    ).not.toBeInTheDocument();
   });
 
   it("restores input and allows retry after send failure", async () => {

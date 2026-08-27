@@ -17,6 +17,8 @@ import {
 import { ConversationHistory } from "../components/ConversationHistory";
 import { ConversationList } from "../components/ConversationList";
 import type {
+  ChatMessage,
+  ChatSource,
   ConversationItem,
   ConversationMessage,
 } from "../types/conversations";
@@ -31,6 +33,31 @@ type PendingSynchronization =
       existingConversationIds: Set<string>;
     };
 
+function attachSourcesToLatestAssistant(
+  messages: ConversationMessage[],
+  sources: ChatSource[],
+): ChatMessage[] {
+  if (sources.length === 0) {
+    return messages;
+  }
+
+  const assistantIndex = [...messages]
+    .map((message, index) => ({ message, index }))
+    .reverse()
+    .find(({ message }) => message.role === "assistant")
+    ?.index;
+
+  if (assistantIndex === undefined) {
+    return messages;
+  }
+
+  return messages.map((message, index) =>
+    index === assistantIndex
+      ? { ...message, sources }
+      : message,
+  );
+}
+
 export function ChatPage() {
   const { token, user, logout } = useAuth();
   const navigate = useNavigate();
@@ -41,7 +68,7 @@ export function ChatPage() {
   const [activeConversationId, setActiveConversationId] =
     useState<string | null>(null);
   const [messages, setMessages] = useState<
-    ConversationMessage[]
+    ChatMessage[]
   >([]);
   const [isConversationsLoading, setIsConversationsLoading] =
     useState(true);
@@ -368,6 +395,7 @@ export function ChatPage() {
   async function synchronizeExistingConversation(
     operationId: number,
     conversationId: string,
+    sources: ChatSource[] = [],
   ) {
     if (operationId !== chatOperationRef.current) {
       return;
@@ -384,7 +412,9 @@ export function ChatPage() {
         return;
       }
 
-      setMessages(history.messages);
+      setMessages(
+        attachSourcesToLatestAssistant(history.messages, sources),
+      );
       setPendingSynchronization(null);
       setSendError("");
     } catch (err) {
@@ -413,6 +443,7 @@ export function ChatPage() {
   async function synchronizeNewConversation(
     operationId: number,
     existingConversationIds: Set<string>,
+    sources: ChatSource[] = [],
   ) {
     if (operationId !== chatOperationRef.current) {
       return;
@@ -457,7 +488,9 @@ export function ChatPage() {
         return;
       }
 
-      setMessages(history.messages);
+      setMessages(
+        attachSourcesToLatestAssistant(history.messages, sources),
+      );
       setPendingSynchronization(null);
       setSendError("");
     } catch (err) {
@@ -541,7 +574,10 @@ export function ChatPage() {
               conversation_id: activeConversationId,
             };
 
-      await chatApi.sendMessage(token, request);
+      const chatResponse = await chatApi.sendMessage(
+        token,
+        request,
+      );
 
       if (operationId !== chatOperationRef.current) {
         return;
@@ -553,6 +589,7 @@ export function ChatPage() {
         await synchronizeExistingConversation(
           operationId,
           activeConversationId,
+          chatResponse.sources,
         );
         return;
       }
@@ -560,6 +597,7 @@ export function ChatPage() {
       await synchronizeNewConversation(
         operationId,
         existingConversationIds,
+        chatResponse.sources,
       );
     } catch (err) {
       if (operationId !== chatOperationRef.current) {

@@ -164,6 +164,33 @@ The application-facing retrieval and generation boundaries remain provider-indep
 
 The frontend Chat workspace displays retrieved RAG source evidence using only the verified backend source fields.
 
+## Retrieval Evaluation
+
+The repository includes a deterministic retrieval evaluation framework.
+
+Evaluation is performed at the chunk level using the stable key:
+
+`<document_id>:<chunk_index>`
+
+Dataset:
+
+`backend/evaluation/retrieval_v1.json`
+
+Metrics:
+- Recall@K
+- Precision@K
+- HitRate@K
+
+Metrics are macro-averaged across evaluation cases. Duplicate retrieved chunk IDs are deduplicated before calculation. Zero relevant chunks produce Recall@K and HitRate@K of `0.0`; zero retrieved chunks produce Precision@K of `0.0`. When fewer than K unique results are available, the available results are used.
+
+The runner accepts deterministic injected retrieval results and does not require Chroma, Ollama, Sentence Transformers, network access, HTTP, or external services.
+
+Example:
+
+`PYTHONPATH=backend python -m app.evaluation.runner --dataset backend/evaluation/retrieval_v1.json --results /path/to/retrieval-results.json --k 3`
+
+This framework measures retrieval behavior only. It does not measure answer correctness, factuality, hallucination rate, groundedness, LLM quality, production accuracy, or superiority over other systems. The repository dataset is intentionally small and is a deterministic evaluation fixture.
+
 ## Authentication
 
 Authentication is JWT-based.

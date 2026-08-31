@@ -163,6 +163,20 @@
 - Source order follows backend retrieval order.
 - Empty retrieval produces an empty source collection with no fabricated source.
 - Frontend source display is implemented in the Chat workspace.
+- Task 34 — RAG Evaluation & Quality Measurement: CLOSED.
+- Batch 1 — Evaluation Dataset & Retrieval Metrics: CLOSED.
+- Evaluation is performed at chunk level using the stable `<document_id>:<chunk_index>` key.
+- Dataset location: `backend/evaluation/retrieval_v1.json`.
+- Metrics: Recall@K, Precision@K, and HitRate@K.
+- Aggregation is deterministic and macro-averaged across evaluation cases.
+- Duplicate retrieved chunk IDs are deduplicated before metric calculation.
+- Zero relevant chunks produce Recall@K = 0.0 and HitRate@K = 0.0.
+- Zero retrieved chunks produce Precision@K = 0.0.
+- When K exceeds available unique retrieved results, the available results are used.
+- The runner uses deterministic injected retrieval results and is provider-independent.
+- The framework does not depend on Chroma, Ollama, Sentence Transformers, network access, or HTTP.
+- Fixture evaluation is framework verification only; no real-project retrieval quality benchmark is claimed.
+- LLM answer-quality evaluation is NOT implemented yet.
 
 ## Next Task
-- Task 34 — RAG Evaluation & Quality Measurement: NOT STARTED.
+- Next evaluation/quality milestone: NOT STARTED.

@@ -1,0 +1,37 @@
+[
+  {
+    "id": "retrieval-001",
+    "query": "termination clause",
+    "relevant_chunk_ids": [
+      "document-1:0"
+    ]
+  },
+  {
+    "id": "retrieval-002",
+    "query": "payment terms and due dates",
+    "relevant_chunk_ids": [
+      "document-1:0",
+      "document-1:1"
+    ]
+  },
+  {
+    "id": "retrieval-003",
+    "query": "renewal conditions",
+    "relevant_chunk_ids": [
+      "document-2:0",
+      "document-2:1"
+    ]
+  },
+  {
+    "id": "retrieval-004",
+    "query": "company headquarters address",
+    "relevant_chunk_ids": [
+      "document-4:0"
+    ]
+  },
+  {
+    "id": "retrieval-005",
+    "query": "intentionally unsupported topic",
+    "relevant_chunk_ids": []
+  }
+]

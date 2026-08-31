@@ -53,3 +53,9 @@ vector_store/
 /frontend/dist/
 /frontend/.env
 /frontend/.env.local
+
+# Local runtime/evaluation artifacts
+/storage/
+/backend/storage/
+/xb
+/backend/xb

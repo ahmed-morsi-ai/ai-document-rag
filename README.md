@@ -197,6 +197,26 @@ PYTHONPATH=backend python -m app.evaluation.runner --dataset backend/evaluation/
 
 The measurements are retrieval-quality measurements for this controlled repository-owned corpus only. They are not production accuracy or a universal benchmark. They do not measure answer correctness, factuality, hallucination rate, groundedness, or LLM answer quality.
 
+## Grounding Evaluation
+
+The repository includes a deterministic, provider-independent grounding evaluation to verify whether expected answer evidence is supported by supplied context passages.
+
+Evaluation set: `backend/evaluation/grounding_v1.json`
+Cases: 5
+Evidence coverage: 0.70 (macro-average across cases; 4 of 6 expected evidence phrases matched)
+
+To reproduce the grounding evaluation:
+
+```bash
+cd ~/Projects/ai-document-rag
+source backend/.venv/bin/activate
+set -a && source .env && set +a
+
+PYTHONPATH=backend python -m app.evaluation.runner --mode grounding --dataset backend/evaluation/grounding_v1.json
+```
+
+The grounding evaluator normalizes whitespace, applies case-folding, and deterministically checks substring presence of expected evidence phrases against supplied source texts. It operates without external models, LLM judges, vector stores, or network calls. It measures deterministic evidence coverage for the controlled dataset and does not claim unconstrained semantic factuality or hallucination detection.
+
 ## Authentication
 
 Authentication is JWT-based.

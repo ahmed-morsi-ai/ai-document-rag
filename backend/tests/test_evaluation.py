@@ -24,7 +24,13 @@ from app.evaluation.metrics import (
     precision_at_k,
     recall_at_k,
 )
-from app.evaluation.runner import run_evaluation
+from app.evaluation.runner import (
+    EvaluationRunnerError,
+    GroundingRunnerResult,
+    _load_fixture_sources,
+    run_evaluation,
+    run_grounding_evaluation,
+)
 from app.services.rag import RagService
 from app.services.retrieval import RetrievalResult, Retriever
 
@@ -642,6 +648,172 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(result.matched_count, 2)
         self.assertEqual(result.expected_count, 2)
         self.assertEqual(result.coverage, 1.0)
+
+    def test_grounding_dataset_invalid_source_texts_raises_error(self):
+        invalid_cases = [
+            {"id": "c1", "query": "q", "answer": "a", "expected_evidence": [], "source_texts": "not-a-list"},
+            {"id": "c1", "query": "q", "answer": "a", "expected_evidence": [], "source_texts": [123]},
+            {"id": "c1", "query": "q", "answer": "a", "expected_evidence": [], "source_texts": ["  "]},
+        ]
+
+        for case_data in invalid_cases:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                path = Path(temp_dir) / "invalid.json"
+                path.write_text(json.dumps([case_data]), encoding="utf-8")
+
+                with self.assertRaises(EvaluationDatasetError):
+                    load_grounding_dataset(path)
+
+    def test_grounding_dataset_loads_source_texts_properly(self):
+        cases = load_grounding_dataset(self.GROUNDING_DATASET_PATH)
+
+        self.assertEqual(len(cases), 5)
+        self.assertTrue(len(cases[0].source_texts) > 0)
+        self.assertIn("30 days written notice", cases[0].source_texts[0])
+
+    def test_run_grounding_evaluation_on_controlled_dataset(self):
+        dataset = load_grounding_dataset(self.GROUNDING_DATASET_PATH)
+        result = run_grounding_evaluation(dataset)
+
+        self.assertEqual(result.evaluation, "grounding-v1")
+        self.assertEqual(result.cases, 5)
+        self.assertEqual(result.matched_count, 4)
+        self.assertEqual(result.expected_count, 6)
+        self.assertEqual(result.evidence_coverage, 0.7)
+
+        result_dict = result.to_dict()
+        self.assertEqual(
+            result_dict,
+            {
+                "cases": 5,
+                "evaluation": "grounding-v1",
+                "metrics": {
+                    "evidence_coverage": 0.7,
+                    "expected_count": 6,
+                    "matched_count": 4,
+                },
+            },
+        )
+
+    def test_run_grounding_evaluation_deterministic_output(self):
+        dataset = load_grounding_dataset(self.GROUNDING_DATASET_PATH)
+
+        first = run_grounding_evaluation(dataset)
+        second = run_grounding_evaluation(dataset)
+
+        self.assertEqual(first, second)
+        self.assertEqual(first.to_dict(), second.to_dict())
+
+    def test_run_grounding_evaluation_with_sources_fixture(self):
+        case = GroundingCase(
+            id="test-1",
+            query="question",
+            answer="answer",
+            expected_evidence=("evidence phrase",),
+        )
+        sources = {
+            "test-1": ["This context contains the evidence phrase."],
+        }
+
+        result = run_grounding_evaluation(
+            [case],
+            evaluation_name="custom-eval",
+            sources_by_case=sources,
+        )
+
+        self.assertEqual(result.evaluation, "custom-eval")
+        self.assertEqual(result.cases, 1)
+        self.assertEqual(result.matched_count, 1)
+        self.assertEqual(result.expected_count, 1)
+        self.assertEqual(result.evidence_coverage, 1.0)
+
+    def test_run_grounding_evaluation_missing_case_in_sources_fixture_raises_error(self):
+        case = GroundingCase(
+            id="test-1",
+            query="question",
+            answer="answer",
+            expected_evidence=("evidence phrase",),
+        )
+        sources = {
+            "other-case": ["Some source text."],
+        }
+
+        with self.assertRaisesRegex(
+            EvaluationRunnerError,
+            "Missing source texts for case test-1",
+        ):
+            run_grounding_evaluation(
+                [case],
+                sources_by_case=sources,
+            )
+
+    def test_run_grounding_evaluation_empty_dataset_raises_error(self):
+        with self.assertRaisesRegex(
+            EvaluationRunnerError,
+            "dataset must not be empty",
+        ):
+            run_grounding_evaluation([])
+
+    def test_load_fixture_sources_valid(self):
+        payload = {
+            "case-1": ["source text 1", "source text 2"],
+            "case-2": ["source text 3"],
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "sources.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+
+            loaded = _load_fixture_sources(path)
+            self.assertEqual(loaded, payload)
+
+    def test_load_fixture_sources_invalid_files(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            nonexistent = Path(temp_dir) / "missing.json"
+            with self.assertRaisesRegex(
+                EvaluationRunnerError,
+                "Grounding sources file not found",
+            ):
+                _load_fixture_sources(nonexistent)
+
+            bad_json = Path(temp_dir) / "bad.json"
+            bad_json.write_text("{bad", encoding="utf-8")
+            with self.assertRaisesRegex(
+                EvaluationRunnerError,
+                "not valid JSON",
+            ):
+                _load_fixture_sources(bad_json)
+
+            non_dict = Path(temp_dir) / "array.json"
+            non_dict.write_text('["not-a-dict"]', encoding="utf-8")
+            with self.assertRaisesRegex(
+                EvaluationRunnerError,
+                "root must be a JSON object",
+            ):
+                _load_fixture_sources(non_dict)
+
+            empty_case_id = Path(temp_dir) / "empty_id.json"
+            empty_case_id.write_text('{"": ["source"]}', encoding="utf-8")
+            with self.assertRaisesRegex(
+                EvaluationRunnerError,
+                "case ids must be non-empty strings",
+            ):
+                _load_fixture_sources(empty_case_id)
+
+            non_list_val = Path(temp_dir) / "non_list.json"
+            non_list_val.write_text('{"case-1": "not-a-list"}', encoding="utf-8")
+            with self.assertRaisesRegex(
+                EvaluationRunnerError,
+                "must be a JSON array",
+            ):
+                _load_fixture_sources(non_list_val)
+
+            empty_source_str = Path(temp_dir) / "empty_source.json"
+            empty_source_str.write_text('{"case-1": [""]}', encoding="utf-8")
+            with self.assertRaisesRegex(
+                EvaluationRunnerError,
+                "must be a non-empty string",
+            ):
+                _load_fixture_sources(empty_source_str)
 
 
 if __name__ == "__main__":

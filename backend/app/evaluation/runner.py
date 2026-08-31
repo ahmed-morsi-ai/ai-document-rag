@@ -6,7 +6,13 @@ from tempfile import TemporaryDirectory
 from typing import Any, Callable, Sequence
 
 from app.core.config import settings
-from app.evaluation.dataset import EvaluationCase, load_dataset
+from app.evaluation.dataset import (
+    EvaluationCase,
+    GroundingCase,
+    load_dataset,
+    load_grounding_dataset,
+)
+from app.evaluation.grounding import evaluate_grounding
 from app.services.document_indexing import DocumentIndexer
 from app.services.embeddings.sentence_transformer import SentenceTransformerEmbeddingProvider
 from app.services.retrieval import Retriever
@@ -68,6 +74,26 @@ class EvaluationResult:
         }
 
 
+@dataclass(frozen=True)
+class GroundingRunnerResult:
+    evaluation: str
+    cases: int
+    matched_count: int
+    expected_count: int
+    evidence_coverage: float
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "cases": self.cases,
+            "evaluation": self.evaluation,
+            "metrics": {
+                "evidence_coverage": self.evidence_coverage,
+                "expected_count": self.expected_count,
+                "matched_count": self.matched_count,
+            },
+        }
+
+
 def run_evaluation(
     dataset: Sequence[EvaluationCase],
     retrieve: RetrievalFunction,
@@ -106,6 +132,45 @@ def run_evaluation(
     )
 
 
+def run_grounding_evaluation(
+    dataset: Sequence[GroundingCase],
+    *,
+    evaluation_name: str = "grounding-v1",
+    sources_by_case: dict[str, Sequence[str]] | None = None,
+) -> GroundingRunnerResult:
+    if not dataset:
+        raise EvaluationRunnerError("dataset must not be empty")
+
+    coverages: list[float] = []
+    total_matched = 0
+    total_expected = 0
+
+    for case in dataset:
+        if sources_by_case is not None:
+            if case.id not in sources_by_case:
+                raise EvaluationRunnerError(
+                    f"Missing source texts for case {case.id}"
+                )
+            sources = sources_by_case[case.id]
+        else:
+            sources = case.source_texts
+
+        result = evaluate_grounding(case.expected_evidence, sources)
+        coverages.append(result.coverage)
+        total_matched += result.matched_count
+        total_expected += result.expected_count
+
+    macro_coverage = sum(coverages) / len(coverages)
+
+    return GroundingRunnerResult(
+        evaluation=evaluation_name,
+        cases=len(dataset),
+        matched_count=total_matched,
+        expected_count=total_expected,
+        evidence_coverage=macro_coverage,
+    )
+
+
 def _load_fixture_results(path: Path) -> dict[str, list[str]]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -141,6 +206,50 @@ def _load_fixture_results(path: Path) -> dict[str, list[str]]:
             if not isinstance(value, str) or not value.strip():
                 raise EvaluationRunnerError(
                     f"Retrieval result {case_id}[{position}] "
+                    "must be a non-empty string"
+                )
+            normalized.append(value)
+
+        results[case_id] = normalized
+
+    return results
+
+
+def _load_fixture_sources(path: Path) -> dict[str, list[str]]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise EvaluationRunnerError(
+            f"Grounding sources file not found: {path}"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise EvaluationRunnerError(
+            f"Grounding sources file is not valid JSON: {path}"
+        ) from exc
+
+    if not isinstance(payload, dict):
+        raise EvaluationRunnerError(
+            "Grounding sources root must be a JSON object keyed by case id"
+        )
+
+    results: dict[str, list[str]] = {}
+
+    for case_id, values in payload.items():
+        if not isinstance(case_id, str) or not case_id.strip():
+            raise EvaluationRunnerError(
+                "Grounding source case ids must be non-empty strings"
+            )
+
+        if not isinstance(values, list):
+            raise EvaluationRunnerError(
+                f"Grounding sources for {case_id} must be a JSON array"
+            )
+
+        normalized: list[str] = []
+        for position, value in enumerate(values):
+            if not isinstance(value, str) or not value.strip():
+                raise EvaluationRunnerError(
+                    f"Grounding source {case_id}[{position}] "
                     "must be a non-empty string"
                 )
             normalized.append(value)
@@ -201,12 +310,19 @@ def _run_real_evaluation(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Run deterministic retrieval evaluation."
+        description="Run deterministic retrieval or grounding evaluation."
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["retrieval", "grounding"],
+        default="retrieval",
+        help="Evaluation mode: 'retrieval' (default) or 'grounding'.",
     )
     parser.add_argument(
         "--dataset",
         required=True,
         type=Path,
+        help="Path to evaluation dataset JSON file.",
     )
     parser.add_argument(
         "--results",
@@ -218,31 +334,58 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--sources",
+        required=False,
+        type=Path,
+        help=(
+            "Optional JSON object mapping grounding case ids to source texts. "
+            "Without this option, source texts from the grounding dataset are used."
+        ),
+    )
+    parser.add_argument(
         "--k",
-        required=True,
+        required=False,
         type=int,
+        help="Top-k retrieval parameter (required for retrieval evaluation).",
     )
 
     args = parser.parse_args()
 
-    dataset = load_dataset(args.dataset)
+    if args.mode == "grounding":
+        dataset = load_grounding_dataset(args.dataset)
 
-    if args.results is not None:
-        fixture_results = _load_fixture_results(args.results)
+        sources_by_case = None
+        if args.sources is not None:
+            sources_by_case = _load_fixture_sources(args.sources)
 
-        result = run_evaluation(
+        result = run_grounding_evaluation(
             dataset,
-            lambda case, _k: fixture_results.get(case.id, []),
-            args.k,
             evaluation_name=args.dataset.stem,
+            sources_by_case=sources_by_case,
         )
+        print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
     else:
-        result = _run_real_evaluation(
-            dataset,
-            args.k,
-        )
+        if args.k is None:
+            parser.error("--k is required for retrieval evaluation")
 
-    print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
+        dataset = load_dataset(args.dataset)
+
+        if args.results is not None:
+            fixture_results = _load_fixture_results(args.results)
+
+            result = run_evaluation(
+                dataset,
+                lambda case, _k: fixture_results.get(case.id, []),
+                args.k,
+                evaluation_name=args.dataset.stem,
+            )
+        else:
+            result = _run_real_evaluation(
+                dataset,
+                args.k,
+            )
+
+        print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":

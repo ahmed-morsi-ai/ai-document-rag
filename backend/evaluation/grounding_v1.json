@@ -5,6 +5,9 @@
     "answer": "Either party may terminate with 30 days written notice.",
     "expected_evidence": [
       "30 days written notice"
+    ],
+    "source_texts": [
+      "The termination clause permits either party to terminate the agreement with 30 days written notice. Termination does not cancel payment obligations that became due before the termination date."
     ]
   },
   {
@@ -13,6 +16,9 @@
     "answer": "Invoices are due within 30 calendar days from the invoice date.",
     "expected_evidence": [
       "30 calendar days from the invoice date"
+    ],
+    "source_texts": [
+      "Invoices are due within 30 calendar days from the invoice date. Late payments may be subject to the contractual remedies described in the agreement."
     ]
   },
   {
@@ -22,6 +28,9 @@
     "expected_evidence": [
       "one additional year",
       "non-renewal notice before the renewal deadline"
+    ],
+    "source_texts": [
+      "The renewal section states that the agreement renews for one additional year. Notice must be delivered before the deadline."
     ]
   },
   {
@@ -30,6 +39,9 @@
     "answer": "Project Beta is listed at 100 Example Street, Example City.",
     "expected_evidence": [
       "100 Example Street, Example City"
+    ],
+    "source_texts": [
+      "The office location for Project Beta is listed as 100 Example Street, Example City. This address is synthetic and is not a real business address."
     ]
   },
   {
@@ -38,6 +50,9 @@
     "answer": "The quantum laboratory performs particle experiments.",
     "expected_evidence": [
       "The document describes quantum laboratory procedures"
+    ],
+    "source_texts": [
+      "All information in this document is repository-owned synthetic evaluation content. It contains no real business records, private addresses, or confidential information."
     ]
   }
 ]

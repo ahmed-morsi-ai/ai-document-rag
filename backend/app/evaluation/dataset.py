@@ -21,6 +21,7 @@ class GroundingCase:
     query: str
     answer: str
     expected_evidence: tuple[str, ...]
+    source_texts: tuple[str, ...] = ()
 
 
 def _require_non_empty_string(value: Any, field: str) -> str:
@@ -213,12 +214,27 @@ def load_grounding_dataset(path: Path) -> list[GroundingCase]:
             )
             validated_evidence.append(val)
 
+        validated_sources: list[str] = []
+        if "source_texts" in raw_case:
+            raw_sources = raw_case["source_texts"]
+            if not isinstance(raw_sources, list):
+                raise EvaluationDatasetError(
+                    f"Case {case_id} source_texts must be a JSON array"
+                )
+            for pos, item in enumerate(raw_sources):
+                val = _require_non_empty_string(
+                    item,
+                    f"case {case_id} source_texts[{pos}]",
+                )
+                validated_sources.append(val)
+
         cases.append(
             GroundingCase(
                 id=case_id,
                 query=query,
                 answer=answer,
                 expected_evidence=tuple(validated_evidence),
+                source_texts=tuple(validated_sources),
             )
         )
 

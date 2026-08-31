@@ -1,0 +1,43 @@
+[
+  {
+    "id": "grounding-001",
+    "query": "What is the termination notice period?",
+    "answer": "Either party may terminate with 30 days written notice.",
+    "expected_evidence": [
+      "30 days written notice"
+    ]
+  },
+  {
+    "id": "grounding-002",
+    "query": "When are invoices due?",
+    "answer": "Invoices are due within 30 calendar days from the invoice date.",
+    "expected_evidence": [
+      "30 calendar days from the invoice date"
+    ]
+  },
+  {
+    "id": "grounding-003",
+    "query": "What are the renewal conditions?",
+    "answer": "The agreement renews for one additional year unless a non-renewal notice is sent before the renewal deadline.",
+    "expected_evidence": [
+      "one additional year",
+      "non-renewal notice before the renewal deadline"
+    ]
+  },
+  {
+    "id": "grounding-004",
+    "query": "Where is Project Beta located?",
+    "answer": "Project Beta is listed at 100 Example Street, Example City.",
+    "expected_evidence": [
+      "100 Example Street, Example City"
+    ]
+  },
+  {
+    "id": "grounding-005",
+    "query": "What happens to a completely unsupported claim?",
+    "answer": "The quantum laboratory performs particle experiments.",
+    "expected_evidence": [
+      "The document describes quantum laboratory procedures"
+    ]
+  }
+]

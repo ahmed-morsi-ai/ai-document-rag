@@ -181,5 +181,9 @@
 - The evaluation framework remains lightweight and provider-independent at the metric layer.
 - The reported measurements represent controlled retrieval quality only and are not production accuracy or a universal benchmark.
 - LLM answer-quality evaluation is NOT implemented yet.
-## Next Task
-- Next evaluation/quality milestone: NOT STARTED.
+- Task 35 — RAG Grounding & Answer-Quality Evaluation: IN PROGRESS.
+  - Batch 1A — Grounding Dataset Model, Loader & Unit Tests: CLOSED.
+  - Batch 1B — Grounding Runner Integration & Evaluation Reporting: NOT STARTED.
+  - Grounding evaluation calculates evidence coverage across normalized source texts.
+  - Grounding dataset: `backend/evaluation/grounding_v1.json`.
+  - All grounding evaluation logic and dataset parsing remain strictly provider-independent.

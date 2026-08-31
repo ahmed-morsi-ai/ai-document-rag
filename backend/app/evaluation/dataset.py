@@ -15,6 +15,14 @@ class EvaluationCase:
     relevant_chunk_ids: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class GroundingCase:
+    id: str
+    query: str
+    answer: str
+    expected_evidence: tuple[str, ...]
+
+
 def _require_non_empty_string(value: Any, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise EvaluationDatasetError(
@@ -122,6 +130,95 @@ def load_dataset(path: Path) -> list[EvaluationCase]:
                 id=case_id,
                 query=query,
                 relevant_chunk_ids=tuple(normalized_ids),
+            )
+        )
+
+    return cases
+
+
+def load_grounding_dataset(path: Path) -> list[GroundingCase]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise EvaluationDatasetError(
+            f"Grounding evaluation dataset not found: {path}"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise EvaluationDatasetError(
+            f"Grounding evaluation dataset is not valid JSON: {path}"
+        ) from exc
+
+    if not isinstance(payload, list):
+        raise EvaluationDatasetError(
+            "Grounding evaluation dataset root must be a JSON array"
+        )
+
+    if not payload:
+        raise EvaluationDatasetError(
+            "Grounding evaluation dataset must contain at least one case"
+        )
+
+    cases: list[GroundingCase] = []
+    seen_case_ids: set[str] = set()
+
+    for index, raw_case in enumerate(payload):
+        if not isinstance(raw_case, dict):
+            raise EvaluationDatasetError(
+                f"Case {index} must be a JSON object"
+            )
+
+        missing = [
+            field
+            for field in ("id", "query", "answer", "expected_evidence")
+            if field not in raw_case
+        ]
+        if missing:
+            raise EvaluationDatasetError(
+                f"Case {index} is missing required fields: "
+                f"{', '.join(missing)}"
+            )
+
+        case_id = _require_non_empty_string(
+            raw_case["id"],
+            f"case {index} id",
+        )
+
+        if case_id in seen_case_ids:
+            raise EvaluationDatasetError(
+                f"Duplicate case id: {case_id}"
+            )
+        seen_case_ids.add(case_id)
+
+        query = _require_non_empty_string(
+            raw_case["query"],
+            f"case {case_id} query",
+        )
+
+        answer = _require_non_empty_string(
+            raw_case["answer"],
+            f"case {case_id} answer",
+        )
+
+        raw_evidence = raw_case["expected_evidence"]
+        if not isinstance(raw_evidence, list):
+            raise EvaluationDatasetError(
+                f"Case {case_id} expected_evidence must be a JSON array"
+            )
+
+        validated_evidence: list[str] = []
+        for pos, item in enumerate(raw_evidence):
+            val = _require_non_empty_string(
+                item,
+                f"case {case_id} expected_evidence[{pos}]",
+            )
+            validated_evidence.append(val)
+
+        cases.append(
+            GroundingCase(
+                id=case_id,
+                query=query,
+                answer=answer,
+                expected_evidence=tuple(validated_evidence),
             )
         )
 

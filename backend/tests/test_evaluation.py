@@ -7,7 +7,15 @@ from pathlib import Path
 from app.evaluation.dataset import (
     EvaluationCase,
     EvaluationDatasetError,
+    GroundingCase,
     load_dataset,
+    load_grounding_dataset,
+)
+from app.evaluation.grounding import (
+    GroundingEvaluationError,
+    GroundingEvaluationResult,
+    evaluate_grounding,
+    normalize_evidence,
 )
 from app.evaluation.metrics import (
     calculate_metrics,
@@ -26,6 +34,11 @@ class EvaluationTests(unittest.TestCase):
         Path(__file__).resolve().parents[1]
         / "evaluation"
         / "retrieval_v1.json"
+    )
+    GROUNDING_DATASET_PATH = (
+        Path(__file__).resolve().parents[1]
+        / "evaluation"
+        / "grounding_v1.json"
     )
 
     def test_valid_dataset_loads(self):
@@ -373,6 +386,262 @@ class EvaluationTests(unittest.TestCase):
             response.context.context,
             "[Source 1]\nfirst chunk",
         )
+
+    def test_valid_grounding_dataset_loads(self):
+        cases = load_grounding_dataset(self.GROUNDING_DATASET_PATH)
+
+        self.assertEqual(len(cases), 5)
+        self.assertEqual(cases[0].id, "grounding-001")
+        self.assertEqual(
+            cases[0].query,
+            "What is the termination notice period?",
+        )
+        self.assertEqual(
+            cases[0].answer,
+            "Either party may terminate with 30 days written notice.",
+        )
+        self.assertEqual(
+            cases[0].expected_evidence,
+            ("30 days written notice",),
+        )
+        self.assertEqual(
+            cases[2].expected_evidence,
+            (
+                "one additional year",
+                "non-renewal notice before the renewal deadline",
+            ),
+        )
+
+    def test_grounding_dataset_missing_file_raises_error(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "nonexistent.json"
+            with self.assertRaisesRegex(
+                EvaluationDatasetError,
+                "dataset not found",
+            ):
+                load_grounding_dataset(path)
+
+    def test_grounding_dataset_invalid_json_raises_error(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "invalid.json"
+            path.write_text("{bad-json", encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                EvaluationDatasetError,
+                "not valid JSON",
+            ):
+                load_grounding_dataset(path)
+
+    def test_grounding_dataset_non_array_root_raises_error(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "invalid.json"
+            path.write_text('{"id": "grounding-001"}', encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                EvaluationDatasetError,
+                "root must be a JSON array",
+            ):
+                load_grounding_dataset(path)
+
+    def test_grounding_dataset_empty_root_raises_error(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "invalid.json"
+            path.write_text("[]", encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                EvaluationDatasetError,
+                "must contain at least one case",
+            ):
+                load_grounding_dataset(path)
+
+    def test_grounding_dataset_non_object_case_raises_error(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "invalid.json"
+            path.write_text('["not-an-object"]', encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                EvaluationDatasetError,
+                "must be a JSON object",
+            ):
+                load_grounding_dataset(path)
+
+    def test_grounding_dataset_missing_fields_raises_error(self):
+        required_fields = ["id", "query", "answer", "expected_evidence"]
+        base_case = {
+            "id": "case-1",
+            "query": "query text",
+            "answer": "answer text",
+            "expected_evidence": ["evidence text"],
+        }
+
+        for field in required_fields:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                case_data = dict(base_case)
+                del case_data[field]
+                path = Path(temp_dir) / "invalid.json"
+                path.write_text(json.dumps([case_data]), encoding="utf-8")
+
+                with self.assertRaisesRegex(
+                    EvaluationDatasetError,
+                    "missing required fields",
+                ):
+                    load_grounding_dataset(path)
+
+    def test_grounding_dataset_invalid_field_types_raises_error(self):
+        invalid_cases = [
+            {"id": 123, "query": "q", "answer": "a", "expected_evidence": []},
+            {"id": "c1", "query": 123, "answer": "a", "expected_evidence": []},
+            {"id": "c1", "query": "q", "answer": 123, "expected_evidence": []},
+            {"id": "c1", "query": "q", "answer": "a", "expected_evidence": "not-a-list"},
+        ]
+
+        for case_data in invalid_cases:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                path = Path(temp_dir) / "invalid.json"
+                path.write_text(json.dumps([case_data]), encoding="utf-8")
+
+                with self.assertRaises(EvaluationDatasetError):
+                    load_grounding_dataset(path)
+
+    def test_grounding_dataset_empty_strings_raises_error(self):
+        empty_cases = [
+            {"id": "   ", "query": "q", "answer": "a", "expected_evidence": []},
+            {"id": "c1", "query": "", "answer": "a", "expected_evidence": []},
+            {"id": "c1", "query": "q", "answer": "  ", "expected_evidence": []},
+        ]
+
+        for case_data in empty_cases:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                path = Path(temp_dir) / "invalid.json"
+                path.write_text(json.dumps([case_data]), encoding="utf-8")
+
+                with self.assertRaisesRegex(
+                    EvaluationDatasetError,
+                    "must be a non-empty string",
+                ):
+                    load_grounding_dataset(path)
+
+    def test_grounding_dataset_duplicate_case_ids_raises_error(self):
+        duplicate_data = [
+            {"id": "dup-1", "query": "q1", "answer": "a1", "expected_evidence": []},
+            {"id": "dup-1", "query": "q2", "answer": "a2", "expected_evidence": []},
+        ]
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "invalid.json"
+            path.write_text(json.dumps(duplicate_data), encoding="utf-8")
+
+            with self.assertRaisesRegex(
+                EvaluationDatasetError,
+                "Duplicate case id",
+            ):
+                load_grounding_dataset(path)
+
+    def test_grounding_dataset_invalid_evidence_items_raises_error(self):
+        invalid_cases = [
+            {"id": "c1", "query": "q", "answer": "a", "expected_evidence": [123]},
+            {"id": "c1", "query": "q", "answer": "a", "expected_evidence": ["  "]},
+        ]
+
+        for case_data in invalid_cases:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                path = Path(temp_dir) / "invalid.json"
+                path.write_text(json.dumps([case_data]), encoding="utf-8")
+
+                with self.assertRaisesRegex(
+                    EvaluationDatasetError,
+                    "must be a non-empty string",
+                ):
+                    load_grounding_dataset(path)
+
+    def test_grounding_dataset_empty_expected_evidence_allowed(self):
+        case_data = [
+            {"id": "c1", "query": "q", "answer": "a", "expected_evidence": []}
+        ]
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "valid.json"
+            path.write_text(json.dumps(case_data), encoding="utf-8")
+
+            loaded = load_grounding_dataset(path)
+            self.assertEqual(len(loaded), 1)
+            self.assertEqual(loaded[0].expected_evidence, ())
+
+    def test_normalize_evidence_behavior(self):
+        self.assertEqual(
+            normalize_evidence("  Hello   WORLD \t\n  "),
+            "hello world",
+        )
+        self.assertEqual(
+            normalize_evidence("Sample Text"),
+            "sample text",
+        )
+
+        with self.assertRaisesRegex(
+            GroundingEvaluationError,
+            "evidence must be a string",
+        ):
+            normalize_evidence(123)
+
+    def test_evaluate_grounding_perfect_match(self):
+        result = evaluate_grounding(
+            expected_evidence=["30 days written notice", "either party"],
+            source_texts=["Either party may terminate with 30 days written notice."],
+        )
+
+        self.assertEqual(result.matched_count, 2)
+        self.assertEqual(result.expected_count, 2)
+        self.assertEqual(result.coverage, 1.0)
+
+    def test_evaluate_grounding_partial_match(self):
+        result = evaluate_grounding(
+            expected_evidence=["one additional year", "non-existent claim"],
+            source_texts=["The agreement renews for one additional year."],
+        )
+
+        self.assertEqual(result.matched_count, 1)
+        self.assertEqual(result.expected_count, 2)
+        self.assertEqual(result.coverage, 0.5)
+
+    def test_evaluate_grounding_zero_match(self):
+        result = evaluate_grounding(
+            expected_evidence=["unsupported claim"],
+            source_texts=["Completely unrelated content."],
+        )
+
+        self.assertEqual(result.matched_count, 0)
+        self.assertEqual(result.expected_count, 1)
+        self.assertEqual(result.coverage, 0.0)
+
+    def test_evaluate_grounding_empty_expected_evidence(self):
+        result = evaluate_grounding(
+            expected_evidence=[],
+            source_texts=["Some source text."],
+        )
+
+        self.assertEqual(result.matched_count, 0)
+        self.assertEqual(result.expected_count, 0)
+        self.assertEqual(result.coverage, 1.0)
+
+    def test_evaluate_grounding_deduplication_and_whitespace_in_expected(self):
+        result = evaluate_grounding(
+            expected_evidence=["  30 days  ", "30   DAYS", "   "],
+            source_texts=["Requires 30 days notice."],
+        )
+
+        self.assertEqual(result.matched_count, 1)
+        self.assertEqual(result.expected_count, 1)
+        self.assertEqual(result.coverage, 1.0)
+
+    def test_evaluate_grounding_multiple_sources_and_non_string_sources(self):
+        result = evaluate_grounding(
+            expected_evidence=["part one", "part two"],
+            source_texts=["Contains part one.", 123, None, "And part two."],
+        )
+
+        self.assertEqual(result.matched_count, 2)
+        self.assertEqual(result.expected_count, 2)
+        self.assertEqual(result.coverage, 1.0)
 
 
 if __name__ == "__main__":

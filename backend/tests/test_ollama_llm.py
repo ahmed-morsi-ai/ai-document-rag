@@ -38,6 +38,7 @@ class OllamaLLMProviderTests(unittest.TestCase):
                 "model": "test-model",
                 "prompt": "hello",
                 "stream": False,
+                "think": False,
             },
             timeout=42.0,
         )

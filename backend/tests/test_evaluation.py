@@ -31,11 +31,11 @@ class EvaluationTests(unittest.TestCase):
     def test_valid_dataset_loads(self):
         cases = load_dataset(self.DATASET_PATH)
 
-        self.assertEqual(len(cases), 5)
+        self.assertEqual(len(cases), 6)
         self.assertEqual(cases[0].id, "retrieval-001")
         self.assertEqual(
             cases[1].relevant_chunk_ids,
-            ("document-1:0", "document-1:1"),
+            ("document-alpha:0",),
         )
 
     def test_malformed_dataset_is_rejected(self):
@@ -266,6 +266,7 @@ class EvaluationTests(unittest.TestCase):
             "retrieval-003": [],
             "retrieval-004": ["document-9:0"],
             "retrieval-005": [],
+            "retrieval-006": [],
         }
 
         def retrieve(case, _k):
@@ -275,7 +276,7 @@ class EvaluationTests(unittest.TestCase):
         second = run_evaluation(dataset, retrieve, 3)
 
         self.assertEqual(first, second)
-        self.assertEqual(first.cases, 5)
+        self.assertEqual(first.cases, 6)
         self.assertEqual(first.k, 3)
 
     def test_provider_independence(self):

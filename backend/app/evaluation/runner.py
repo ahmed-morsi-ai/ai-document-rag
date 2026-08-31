@@ -2,9 +2,15 @@ import argparse
 from dataclasses import dataclass
 import json
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, Callable, Sequence
 
+from app.core.config import settings
 from app.evaluation.dataset import EvaluationCase, load_dataset
+from app.services.document_indexing import DocumentIndexer
+from app.services.embeddings.sentence_transformer import SentenceTransformerEmbeddingProvider
+from app.services.retrieval import Retriever
+from app.services.vector_store.chroma import ChromaVectorStore
 from app.evaluation.metrics import (
     EvaluationMetrics,
     calculate_metrics,
@@ -144,6 +150,55 @@ def _load_fixture_results(path: Path) -> dict[str, list[str]]:
     return results
 
 
+def _run_real_evaluation(
+    dataset: Sequence[EvaluationCase],
+    k: int,
+) -> EvaluationResult:
+    corpus = Path(__file__).resolve().parents[2] / "evaluation" / "corpus"
+
+    documents = [
+        ("document-alpha", corpus / "document-alpha.txt"),
+        ("document-beta", corpus / "document-beta.txt"),
+        ("document-gamma", corpus / "document-gamma.txt"),
+    ]
+
+    embedding_provider = SentenceTransformerEmbeddingProvider(
+        settings.EMBEDDING_MODEL,
+    )
+
+    with TemporaryDirectory(prefix="ai-rag-eval-") as temp_dir:
+        vector_store = ChromaVectorStore(
+            persist_directory=Path(temp_dir),
+            collection_name="retrieval_eval_v1",
+        )
+
+        indexer = DocumentIndexer(
+            embedding_provider=embedding_provider,
+            vector_store=vector_store,
+        )
+
+        for document_id, file_path in documents:
+            indexer.index_document(
+                document_id=document_id,
+                file_path=file_path,
+            )
+
+        retriever = Retriever(
+            embedding_provider=embedding_provider,
+            vector_store=vector_store,
+        )
+
+        return run_evaluation(
+            dataset,
+            lambda case, limit: retriever.retrieve(
+                case.query,
+                top_k=limit,
+            ),
+            k,
+            evaluation_name="retrieval-v1-real",
+        )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run deterministic retrieval evaluation."
@@ -155,11 +210,11 @@ def main() -> None:
     )
     parser.add_argument(
         "--results",
-        required=True,
+        required=False,
         type=Path,
         help=(
-            "JSON object mapping evaluation case ids to retrieved "
-            "stable chunk ids."
+            "Optional JSON object mapping evaluation case ids to retrieved "
+            "stable chunk ids. Without this option, real retrieval is used."
         ),
     )
     parser.add_argument(
@@ -171,14 +226,21 @@ def main() -> None:
     args = parser.parse_args()
 
     dataset = load_dataset(args.dataset)
-    fixture_results = _load_fixture_results(args.results)
 
-    result = run_evaluation(
-        dataset,
-        lambda case, _k: fixture_results.get(case.id, []),
-        args.k,
-        evaluation_name=args.dataset.stem,
-    )
+    if args.results is not None:
+        fixture_results = _load_fixture_results(args.results)
+
+        result = run_evaluation(
+            dataset,
+            lambda case, _k: fixture_results.get(case.id, []),
+            args.k,
+            evaluation_name=args.dataset.stem,
+        )
+    else:
+        result = _run_real_evaluation(
+            dataset,
+            args.k,
+        )
 
     print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
 

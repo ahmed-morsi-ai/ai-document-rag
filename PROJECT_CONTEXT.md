@@ -165,18 +165,21 @@
 - Frontend source display is implemented in the Chat workspace.
 - Task 34 — RAG Evaluation & Quality Measurement: CLOSED.
 - Batch 1 — Evaluation Dataset & Retrieval Metrics: CLOSED.
+- Batch 2 — Real Retrieval Evaluation & Results Reporting: CLOSED.
+- Controlled evaluation corpus: `backend/evaluation/corpus/`.
+- The corpus contains three repository-owned synthetic documents and is indexed using the existing parser, chunking, `DocumentIndexer`, embedding provider, and Chroma implementation.
 - Evaluation is performed at chunk level using the stable `<document_id>:<chunk_index>` key.
-- Dataset location: `backend/evaluation/retrieval_v1.json`.
-- Metrics: Recall@K, Precision@K, and HitRate@K.
-- Aggregation is deterministic and macro-averaged across evaluation cases.
-- Duplicate retrieved chunk IDs are deduplicated before metric calculation.
-- Zero relevant chunks produce Recall@K = 0.0 and HitRate@K = 0.0.
-- Zero retrieved chunks produce Precision@K = 0.0.
-- When K exceeds available unique retrieved results, the available results are used.
-- The runner uses deterministic injected retrieval results and is provider-independent.
-- The framework does not depend on Chroma, Ollama, Sentence Transformers, network access, or HTTP.
-- Fixture evaluation is framework verification only; no real-project retrieval quality benchmark is claimed.
+- Evaluation dataset: `backend/evaluation/retrieval_v1.json`.
+- The evaluation dataset contains 6 controlled cases whose relevance labels correspond to actual indexed chunks.
+- Real retrieval execution uses the existing `Retriever` with the existing `all-MiniLM-L6-v2` embedding provider and an isolated temporary Chroma vector store.
+- Evaluated K values: 1, 3, and 5.
+- Recall@1 = 0.75, Recall@3 = 0.8333333333333334, Recall@5 = 0.8333333333333334.
+- Precision@1 = 0.8333333333333334, Precision@3 = 0.3333333333333333, Precision@5 = 0.20000000000000004.
+- HitRate@1 = 0.8333333333333334, HitRate@3 = 0.8333333333333334, HitRate@5 = 0.8333333333333334.
+- Repeated real evaluation runs produced identical metric values for K=1, K=3, and K=5.
+- The real evaluation uses an isolated temporary vector store and does not modify the normal project vector-store data.
+- The evaluation framework remains lightweight and provider-independent at the metric layer.
+- The reported measurements represent controlled retrieval quality only and are not production accuracy or a universal benchmark.
 - LLM answer-quality evaluation is NOT implemented yet.
-
 ## Next Task
 - Next evaluation/quality milestone: NOT STARTED.

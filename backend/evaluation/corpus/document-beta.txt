@@ -1,0 +1,15 @@
+Project Beta is another fictional document used only to provide distractor retrieval content.
+
+Section 1 — Location. The office location for Project Beta is listed as 100 Example Street, Example City. This address is synthetic and is not a real business address.
+
+Section 2 — Support. The support policy requires routine service requests to be acknowledged within two business days. Emergency requests follow a separate fictional escalation procedure.
+
+Section 3 — Maintenance. The document discusses maintenance scheduling, service windows, operational notices, and routine service coordination.
+
+Section 4 — Infrastructure. Scheduled maintenance may include equipment inspection, backup checks, and service availability reviews. These operational procedures do not define contractual payment or termination provisions.
+
+Section 5 — Communications. Routine notices should identify the affected service, expected maintenance window, and responsible fictional team. These communications are operational rather than contractual.
+
+Section 6 — General. All information in this document is repository-owned synthetic evaluation content. It contains no real business records, private addresses, or confidential information.
+
+Section 7 — Distinguishing content. Project Beta intentionally contains terms such as service, notice, schedule, and location that can act as lexical distractors during retrieval evaluation.

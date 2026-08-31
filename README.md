@@ -166,30 +166,36 @@ The frontend Chat workspace displays retrieved RAG source evidence using only th
 
 ## Retrieval Evaluation
 
-The repository includes a deterministic retrieval evaluation framework.
+The repository includes a deterministic, chunk-level retrieval evaluation.
 
-Evaluation is performed at the chunk level using the stable key:
+Evaluation set: `retrieval-v1`
+Cases: 6
+Controlled corpus: `backend/evaluation/corpus/`
+Embedding model: `all-MiniLM-L6-v2`
+Vector store: isolated temporary Chroma
+Retriever: existing project `Retriever`
 
-`<document_id>:<chunk_index>`
+| Metric | @1 | @3 | @5 |
+| --- | ---: | ---: | ---: |
+| Recall | 0.75 | 0.8333333333333334 | 0.8333333333333334 |
+| Precision | 0.8333333333333334 | 0.3333333333333333 | 0.20000000000000004 |
+| Hit Rate | 0.8333333333333334 | 0.8333333333333334 | 0.8333333333333334 |
 
-Dataset:
+The evaluation is performed at chunk level using the stable `<document_id>:<chunk_index>` key. The controlled corpus is indexed through the existing parser, chunking, `DocumentIndexer`, embedding provider, Chroma implementation, and `Retriever`.
 
-`backend/evaluation/retrieval_v1.json`
+To reproduce the real retrieval evaluation:
 
-Metrics:
-- Recall@K
-- Precision@K
-- HitRate@K
+```bash
+cd ~/Projects/ai-document-rag
+source backend/.venv/bin/activate
+set -a && source .env && set +a
 
-Metrics are macro-averaged across evaluation cases. Duplicate retrieved chunk IDs are deduplicated before calculation. Zero relevant chunks produce Recall@K and HitRate@K of `0.0`; zero retrieved chunks produce Precision@K of `0.0`. When fewer than K unique results are available, the available results are used.
+PYTHONPATH=backend python -m app.evaluation.runner --dataset backend/evaluation/retrieval_v1.json --k 1
+PYTHONPATH=backend python -m app.evaluation.runner --dataset backend/evaluation/retrieval_v1.json --k 3
+PYTHONPATH=backend python -m app.evaluation.runner --dataset backend/evaluation/retrieval_v1.json --k 5
+```
 
-The runner accepts deterministic injected retrieval results and does not require Chroma, Ollama, Sentence Transformers, network access, HTTP, or external services.
-
-Example:
-
-`PYTHONPATH=backend python -m app.evaluation.runner --dataset backend/evaluation/retrieval_v1.json --results /path/to/retrieval-results.json --k 3`
-
-This framework measures retrieval behavior only. It does not measure answer correctness, factuality, hallucination rate, groundedness, LLM quality, production accuracy, or superiority over other systems. The repository dataset is intentionally small and is a deterministic evaluation fixture.
+The measurements are retrieval-quality measurements for this controlled repository-owned corpus only. They are not production accuracy or a universal benchmark. They do not measure answer correctness, factuality, hallucination rate, groundedness, or LLM answer quality.
 
 ## Authentication
 

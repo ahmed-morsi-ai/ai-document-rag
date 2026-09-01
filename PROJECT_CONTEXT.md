@@ -180,7 +180,7 @@
 - The real evaluation uses an isolated temporary vector store and does not modify the normal project vector-store data.
 - The evaluation framework remains lightweight and provider-independent at the metric layer.
 - The reported measurements represent controlled retrieval quality only and are not production accuracy or a universal benchmark.
-- Task 35 — RAG Answer Quality & Groundedness: IN PROGRESS.
+- Task 35 — RAG Answer Quality & Groundedness: CLOSED.
   - Batch 1A — Grounding Dataset Model, Loader & Unit Tests: CLOSED.
   - Batch 1B — Grounding Evaluation Runner Integration: CLOSED.
   - Grounding evaluation calculates macro-averaged evidence coverage across normalized source texts.
@@ -190,4 +190,4 @@
   - All grounding evaluation logic and dataset parsing remain strictly provider-independent without external service, model, or network dependencies.
   - LLM judge / factuality model evaluation is NOT implemented.
 ## Next Task
-- Task 35 Next Milestone: NOT STARTED.
+- Task 35 is fully verified and closed; the next task will be defined after the roadmap review.

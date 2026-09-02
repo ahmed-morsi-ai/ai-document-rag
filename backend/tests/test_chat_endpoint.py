@@ -7,7 +7,7 @@ os.environ.setdefault(
     "DATABASE_URL",
     "postgresql+asyncpg://postgres:postgres@localhost:5432/ai_document_rag",
 )
-os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key")
+os.environ.setdefault("JWT_SECRET_KEY", "test-only-jwt-secret-key-32-bytes-long")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 
 from fastapi.testclient import TestClient

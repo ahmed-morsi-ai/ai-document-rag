@@ -406,6 +406,12 @@ JWT_ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES
 ```
 
+JWT_SECRET_KEY must be at least 32 characters long.
+
+### CORS
+
+CORS_ORIGINS is a comma-separated list of allowed origins. Development defaults are http://localhost:5173 and http://127.0.0.1:5173. Wildcard (*) origins are rejected while credentialed CORS requests are enabled.
+
 ### Embeddings / Vector Storage
 
 ```text

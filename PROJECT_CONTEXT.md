@@ -42,38 +42,16 @@
 - Focused sentence-transformers provider tests exist in `backend/tests/test_sentence_transformer_embeddings.py`.
 
 ## In Progress
-- Task 11 — Embeddings and Vector Storage Integration is completed.
-- Task 12 — Document Indexing is completed.
-- Task 12 Batch 1 introduced the document indexing orchestration service.
-- Task 12 Batch 2 integrates synchronous document indexing into the successful upload flow.
-- The upload flow is validation → storage → document persistence → indexing.
+- No implementation task is currently in progress.
 
 ## Planned
-- Continue roadmap work after reviewing the completed Tasks 1–36 milestones.
-- Define and execute the next reliability/product milestone.
+- Task 38 will be defined explicitly before implementation begins.
 
 ## Unknown
-- Exact final architecture for document storage and retrieval beyond the current database foundation.
-- Target LLM provider and embedding model because no corresponding code or configuration exists.
-- Full frontend framework and structure are implemented.
+- The detailed scope and batches for Task 38 are not yet defined.
 
 ## Known Issues
-- The full long-term roadmap is not yet complete; the next milestones will continue reliability, deployment, and release-readiness work.
-- The frontend directory contains the implemented frontend application.
-- The document upload flow now validates authenticated upload requests, stores files locally, persists document metadata, and removes stored files if database persistence fails.
-- Document parser abstraction, parser selection, PDF, DOCX, and TXT text extraction, and deterministic character-based document chunking are implemented.
-- A provider-independent embedding abstraction and local `sentence-transformers` concrete provider are implemented.
-- The project uses the configured `EMBEDDING_MODEL` setting for the local sentence-transformers provider.
-- A provider-independent vector-store abstraction exists in `backend/app/services/vector_store/base.py`.
-- A local persistent Chroma vector-store implementation exists in `backend/app/services/vector_store/chroma.py`.
-- The Chroma backend uses `chromadb==1.5.9` and stores vectors, source text, and generic string metadata.
-- Vector queries return provider-independent `VectorQueryResult` objects.
-- Document indexing orchestration is implemented in `backend/app/services/document_indexing.py`.
-- Successful document uploads invoke indexing after file storage and document metadata persistence succeed.
-- Indexing failures propagate to the upload caller rather than being silently ignored.
-- Retrieval workflows, conversation model, chat endpoint, and RAG implementation are implemented.
-- The repository contains focused backend tests plus broader regression coverage for the implemented application workflows.
-- JWT test fixtures use deterministic test-only keys that satisfy the minimum 32-character HS256 key requirement.
+- No documentation-only issues are currently tracked here.
 
 ## Completed Tasks
 - Task 1: Inspect Configuration & Authentication Architecture — completed.
@@ -179,14 +157,14 @@
 - The evaluation framework remains lightweight and provider-independent at the metric layer.
 - The reported measurements represent controlled retrieval quality only and are not production accuracy or a universal benchmark.
 - Task 35 — RAG Answer Quality & Groundedness: CLOSED.
-- Task 36 — Batch 1: Production Configuration & Security Hardening: CLOSED.
-  - Batch 1A — Grounding Dataset Model, Loader & Unit Tests: CLOSED.
-  - Batch 1B — Grounding Evaluation Runner Integration: CLOSED.
-  - Grounding evaluation calculates macro-averaged evidence coverage across normalized source texts.
-  - Grounding dataset: `backend/evaluation/grounding_v1.json` (5 controlled cases with explicit source texts).
-  - CLI runner integration: `python -m app.evaluation.runner --mode grounding --dataset backend/evaluation/grounding_v1.json`.
-  - Evidence coverage for controlled dataset: 0.70 (matched 4 of 6 expected evidence items).
-  - All grounding evaluation logic and dataset parsing remain strictly provider-independent without external service, model, or network dependencies.
-  - LLM judge / factuality model evaluation is NOT implemented.
+- Task 36 — Production Configuration & Security Hardening: CLOSED.
+- Task 37 — Reliability Hardening: CLOSED.
+  - Batch 1 — Safe internal HTTP 500 handling: CLOSED.
+  - Batch 2 — Registration IntegrityError handling: CLOSED.
+  - Batch 3 — Document lifecycle consistency: CLOSED.
+  - Batch 4 — Transactional chat exchange: CLOSED.
+  - Batch 5 — Endpoint reliability test hardening: CLOSED.
+- Full backend regression suite: 301 tests passing.
 ## Next Task
-- Task 37 will be defined after the roadmap review, focusing on the next reliability/product milestone.
+- Task 38 — End-to-End Product Verification.
+- Detailed scope and batches will be defined explicitly before implementation begins.

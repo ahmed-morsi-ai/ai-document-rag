@@ -2,9 +2,12 @@ import unittest
 from unittest import mock
 
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
 from sqlalchemy.exc import IntegrityError
 
 from app.api.routes import auth as auth_module
+from app.db.database import get_db
+from app.main import app
 from app.schemas.auth import UserCreate
 
 
@@ -129,6 +132,56 @@ class RegistrationReliabilityTests(unittest.IsolatedAsyncioTestCase):
             RAW_DATABASE_ERROR,
             str(context.exception),
         )
+
+    def test_unexpected_creation_failure_returns_safe_500(self):
+        db = mock.AsyncMock()
+
+        async def override_get_db():
+            yield db
+
+        app.dependency_overrides[get_db] = override_get_db
+
+        try:
+            with mock.patch.object(
+                auth_module,
+                "get_user_by_email",
+                new=mock.AsyncMock(return_value=None),
+            ), mock.patch.object(
+                auth_module,
+                "create_user",
+                new=mock.AsyncMock(
+                    side_effect=RuntimeError(
+                        "secret auth failure"
+                    )
+                ),
+            ):
+                client = TestClient(
+                    app,
+                    raise_server_exceptions=False,
+                )
+
+                response = client.post(
+                    "/auth/register",
+                    json={
+                        "email": "user@example.com",
+                        "password": "strong-password",
+                    },
+                )
+
+            self.assertEqual(
+                response.status_code,
+                500,
+            )
+            self.assertEqual(
+                response.json(),
+                {"detail": "Internal server error"},
+            )
+            self.assertNotIn(
+                "secret auth failure",
+                response.text,
+            )
+        finally:
+            app.dependency_overrides.clear()
 
     async def test_successful_registration_behavior_remains_unchanged(self):
         created_user = mock.Mock()

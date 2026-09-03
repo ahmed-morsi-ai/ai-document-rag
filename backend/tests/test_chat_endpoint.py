@@ -298,21 +298,35 @@ class ChatEndpointTests(unittest.TestCase):
 
         self.fake_chat_service.chat.assert_not_called()
 
-    def test_chat_service_failure_is_not_silently_converted(self):
+    def test_chat_service_failure_returns_safe_500(self):
         self.fake_chat_service.chat.side_effect = RuntimeError(
             "chat failure"
         )
 
-        with self.assertRaisesRegex(
-            RuntimeError,
+        client = TestClient(
+            app,
+            raise_server_exceptions=False,
+        )
+
+        response = client.post(
+            "/chat",
+            json={
+                "query": "hello",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            500,
+        )
+        self.assertEqual(
+            response.json(),
+            {"detail": "Internal server error"},
+        )
+        self.assertNotIn(
             "chat failure",
-        ):
-            self.client.post(
-                "/chat",
-                json={
-                    "query": "hello",
-                },
-            )
+            response.text,
+        )
 
     def test_existing_upload_and_retrieval_routes_remain_registered(self):
         paths = app.openapi()["paths"]

@@ -88,12 +88,23 @@ async def upload_document(
         raise
 
     indexer = get_document_indexer()
-    indexer.index_document(
-        document_id=str(document.id),
-        file_path=(
-            get_storage_root() / document.storage_path
-        ),
-    )
+    vector_store = get_vector_store()
+
+    try:
+        indexer.index_document(
+            document_id=str(document.id),
+            file_path=(
+                get_storage_root() / document.storage_path
+            ),
+        )
+    except Exception:
+        try:
+            vector_store.delete_by_document_id(
+                str(document.id)
+            )
+        except Exception:
+            pass
+        raise
 
     return document
 
@@ -134,8 +145,4 @@ async def delete_document_route(
         vector_store=get_vector_store(),
     )
 
-    try:
-        await deletion_service.delete_owned_document(document)
-    except Exception:
-        await db.rollback()
-        raise
+    await deletion_service.delete_owned_document(document)

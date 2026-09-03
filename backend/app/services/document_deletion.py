@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import Document
@@ -22,10 +20,16 @@ class DocumentDeletionService:
         self,
         document: Document,
     ) -> None:
-        """Delete vectors and file before committing the DB deletion."""
+        """Commit DB deletion before removing external artifacts."""
 
-        self.vector_store.delete_by_document_id(str(document.id))
+        try:
+            await self.db.delete(document)
+            await self.db.commit()
+        except Exception:
+            await self.db.rollback()
+            raise
+
+        self.vector_store.delete_by_document_id(
+            str(document.id)
+        )
         delete_document(document.storage_path)
-
-        await self.db.delete(document)
-        await self.db.commit()

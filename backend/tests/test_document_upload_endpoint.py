@@ -187,7 +187,9 @@ class DocumentUploadEndpointTests(unittest.IsolatedAsyncioTestCase):
             str(storage_path),
         )
 
-    async def test_indexing_failure_propagates(self):
+    async def test_indexing_failure_triggers_vector_cleanup_and_preserves_artifacts(
+        self,
+    ):
         storage_path = (
             Path(str(self.owner_id))
             / "document.pdf"
@@ -203,6 +205,8 @@ class DocumentUploadEndpointTests(unittest.IsolatedAsyncioTestCase):
             "indexing failed"
         )
 
+        mock_vector_store = mock.Mock()
+
         with (
             mock.patch(
                 "app.api.routes.documents.store_document",
@@ -214,9 +218,16 @@ class DocumentUploadEndpointTests(unittest.IsolatedAsyncioTestCase):
                 return_value=mock_indexer,
             ),
             mock.patch(
+                "app.api.routes.documents.get_vector_store",
+                return_value=mock_vector_store,
+            ),
+            mock.patch(
                 "app.api.routes.documents.get_storage_root",
                 return_value=Path("/tmp/document-storage"),
             ),
+            mock.patch(
+                "app.api.routes.documents.delete_document",
+            ) as mock_delete_document,
         ):
             file = UploadFile(
                 filename="document.pdf",
@@ -237,7 +248,146 @@ class DocumentUploadEndpointTests(unittest.IsolatedAsyncioTestCase):
                 )
 
         mock_db.commit.assert_awaited_once()
-        mock_db.refresh.assert_awaited_once()
+        mock_db.refresh.assert_awaited_once_with(
+            mock.ANY,
+        )
+        mock_db.rollback.assert_not_awaited()
+        mock_vector_store.delete_by_document_id.assert_called_once_with(
+            mock.ANY,
+        )
+        self.assertEqual(
+            mock_vector_store.delete_by_document_id.call_args.args[0],
+            str(mock_db.refresh.call_args.args[0].id),
+        )
+        mock_delete_document.assert_not_called()
+
+
+    async def test_vector_cleanup_failure_preserves_original_indexing_failure(
+        self,
+    ):
+        storage_path = (
+            Path(str(self.owner_id))
+            / "document.pdf"
+        )
+
+        mock_db = mock.Mock()
+        mock_db.commit = mock.AsyncMock()
+        mock_db.refresh = mock.AsyncMock()
+        mock_db.rollback = mock.AsyncMock()
+
+        mock_indexer = mock.Mock()
+        mock_indexer.index_document.side_effect = RuntimeError(
+            "indexing failed"
+        )
+
+        mock_vector_store = mock.Mock()
+        mock_vector_store.delete_by_document_id.side_effect = RuntimeError(
+            "vector cleanup failed"
+        )
+
+        with (
+            mock.patch(
+                "app.api.routes.documents.store_document",
+                new_callable=mock.AsyncMock,
+                return_value=str(storage_path),
+            ),
+            mock.patch(
+                "app.api.routes.documents.get_document_indexer",
+                return_value=mock_indexer,
+            ),
+            mock.patch(
+                "app.api.routes.documents.get_vector_store",
+                return_value=mock_vector_store,
+            ),
+            mock.patch(
+                "app.api.routes.documents.get_storage_root",
+                return_value=Path("/tmp/document-storage"),
+            ),
+            mock.patch(
+                "app.api.routes.documents.delete_document",
+            ) as mock_delete_document,
+        ):
+            file = UploadFile(
+                filename="document.pdf",
+                file=BytesIO(b"document"),
+                headers=Headers(
+                    {"content-type": "application/pdf"}
+                ),
+            )
+
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "indexing failed",
+            ):
+                await upload_document(
+                    file=file,
+                    current_user=self.user,
+                    db=mock_db,
+                )
+
+        mock_db.commit.assert_awaited_once()
+        mock_db.rollback.assert_not_awaited()
+        mock_vector_store.delete_by_document_id.assert_called_once()
+        mock_delete_document.assert_not_called()
+
+    def test_indexing_failure_returns_generic_500(self):
+        storage_path = (
+            Path(str(self.owner_id))
+            / "document.pdf"
+        )
+
+        mock_indexer = mock.Mock()
+        mock_indexer.index_document.side_effect = RuntimeError(
+            "indexing failed secret"
+        )
+
+        mock_vector_store = mock.Mock()
+
+        self.client = TestClient(
+            app,
+            raise_server_exceptions=False,
+        )
+
+        with (
+            mock.patch(
+                "app.api.routes.documents.store_document",
+                new_callable=mock.AsyncMock,
+                return_value=str(storage_path),
+            ),
+            mock.patch(
+                "app.api.routes.documents.get_document_indexer",
+                return_value=mock_indexer,
+            ),
+            mock.patch(
+                "app.api.routes.documents.get_vector_store",
+                return_value=mock_vector_store,
+            ),
+            mock.patch(
+                "app.api.routes.documents.get_storage_root",
+                return_value=Path("/tmp/document-storage"),
+            ),
+        ):
+            response = self.client.post(
+                "/documents/upload",
+                files={
+                    "file": (
+                        "document.pdf",
+                        b"%PDF-test-content",
+                        "application/pdf",
+                    )
+                },
+            )
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(
+            response.json(),
+            {"detail": "Internal server error"},
+        )
+        self.assertNotIn(
+            "indexing failed secret",
+            response.text,
+        )
+
 
     async def test_storage_failure_does_not_invoke_indexing(self):
         mock_indexer = mock.Mock()

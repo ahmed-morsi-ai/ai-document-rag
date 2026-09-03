@@ -19,15 +19,22 @@ class ChatPersistenceService:
         self,
         owner_id: UUID,
         title: str | None = None,
+        *,
+        commit: bool = True,
     ) -> Conversation:
+        """Create a conversation, optionally deferring transaction commit."""
         conversation = Conversation(
             owner_id=owner_id,
             title=title,
         )
 
         self.db.add(conversation)
-        await self.db.commit()
-        await self.db.refresh(conversation)
+
+        if commit:
+            await self.db.commit()
+            await self.db.refresh(conversation)
+        else:
+            await self.db.flush()
 
         return conversation
 
@@ -92,7 +99,10 @@ class ChatPersistenceService:
         role: str,
         content: str,
         sequence_number: int,
+        *,
+        commit: bool = True,
     ) -> Message:
+        """Append a message, optionally deferring transaction commit."""
         await self.get_conversation(
             owner_id=owner_id,
             conversation_id=conversation_id,
@@ -106,10 +116,20 @@ class ChatPersistenceService:
         )
 
         self.db.add(message)
-        await self.db.commit()
-        await self.db.refresh(message)
+
+        if commit:
+            await self.db.commit()
+            await self.db.refresh(message)
+        else:
+            await self.db.flush()
 
         return message
+
+    async def commit_transaction(self) -> None:
+        await self.db.commit()
+
+    async def rollback_transaction(self) -> None:
+        await self.db.rollback()
 
     async def get_next_sequence_number(
         self,

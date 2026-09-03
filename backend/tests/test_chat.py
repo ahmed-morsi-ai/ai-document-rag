@@ -62,8 +62,16 @@ class FakePersistenceService:
         self.get_error = None
         self.user_message_error = None
         self.assistant_message_error = None
+        self.commit_calls = 0
+        self.rollback_calls = 0
 
-    async def create_conversation(self, owner_id, title=None):
+    async def create_conversation(
+        self,
+        owner_id,
+        title=None,
+        *,
+        commit=True,
+    ):
         if self.create_error:
             raise self.create_error
 
@@ -128,6 +136,8 @@ class FakePersistenceService:
         role,
         content,
         sequence_number,
+        *,
+        commit=True,
     ):
         if role == "user" and self.user_message_error:
             raise self.user_message_error
@@ -151,6 +161,15 @@ class FakePersistenceService:
                 "sequence_number": sequence_number,
             }
         )
+
+
+    async def commit_transaction(self):
+        self.events.append("commit")
+        self.commit_calls += 1
+
+    async def rollback_transaction(self):
+        self.events.append("rollback")
+        self.rollback_calls += 1
 
 
 class ChatServiceTests(unittest.IsolatedAsyncioTestCase):
@@ -312,6 +331,7 @@ class ChatServiceTests(unittest.IsolatedAsyncioTestCase):
                 "append_message:user",
                 "get_next_sequence_number:2",
                 "append_message:assistant",
+                "commit",
             ],
         )
 

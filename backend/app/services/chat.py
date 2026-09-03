@@ -38,63 +38,72 @@ class ChatService:
         top_k: int = 5,
         conversation_id: UUID | None = None,
     ) -> ChatResponse:
-        if conversation_id is None:
-            conversation = (
-                await self.persistence_service.create_conversation(
-                    owner_id=user_id,
-                    title=_derive_conversation_title(query),
+        try:
+            if conversation_id is None:
+                conversation = (
+                    await self.persistence_service.create_conversation(
+                        owner_id=user_id,
+                        title=_derive_conversation_title(query),
+                        commit=False,
+                    )
                 )
-            )
-        else:
-            conversation = (
-                await self.persistence_service.get_conversation(
+            else:
+                conversation = (
+                    await self.persistence_service.get_conversation(
+                        owner_id=user_id,
+                        conversation_id=conversation_id,
+                    )
+                )
+
+            user_sequence_number = (
+                await self.persistence_service.get_next_sequence_number(
                     owner_id=user_id,
-                    conversation_id=conversation_id,
+                    conversation_id=conversation.id,
                 )
             )
 
-        user_sequence_number = (
-            await self.persistence_service.get_next_sequence_number(
+            await self.persistence_service.append_message(
                 owner_id=user_id,
                 conversation_id=conversation.id,
+                role="user",
+                content=query,
+                sequence_number=user_sequence_number,
+                commit=False,
             )
-        )
 
-        await self.persistence_service.append_message(
-            owner_id=user_id,
-            conversation_id=conversation.id,
-            role="user",
-            content=query,
-            sequence_number=user_sequence_number,
-        )
+            rag_response = await _maybe_await(
+                self.rag_service.generate_answer(
+                    query=query,
+                    top_k=top_k,
+                )
+            )
 
-        rag_response = await _maybe_await(
-            self.rag_service.generate_answer(
+            assistant_sequence_number = (
+                await self.persistence_service.get_next_sequence_number(
+                    owner_id=user_id,
+                    conversation_id=conversation.id,
+                )
+            )
+
+            await self.persistence_service.append_message(
+                owner_id=user_id,
+                conversation_id=conversation.id,
+                role="assistant",
+                content=rag_response.answer,
+                sequence_number=assistant_sequence_number,
+                commit=False,
+            )
+
+            await self.persistence_service.commit_transaction()
+
+            return ChatResponse(
                 query=query,
-                top_k=top_k,
+                answer=rag_response.answer,
+                sources=list(rag_response.sources),
             )
-        )
-
-        assistant_sequence_number = (
-            await self.persistence_service.get_next_sequence_number(
-                owner_id=user_id,
-                conversation_id=conversation.id,
-            )
-        )
-
-        await self.persistence_service.append_message(
-            owner_id=user_id,
-            conversation_id=conversation.id,
-            role="assistant",
-            content=rag_response.answer,
-            sequence_number=assistant_sequence_number,
-        )
-
-        return ChatResponse(
-            query=query,
-            answer=rag_response.answer,
-            sources=list(rag_response.sources),
-        )
+        except Exception:
+            await self.persistence_service.rollback_transaction()
+            raise
 
 
 async def _maybe_await(value):

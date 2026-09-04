@@ -45,10 +45,10 @@
 - No implementation task is currently in progress.
 
 ## Planned
-- Task 38 will be defined explicitly before implementation begins.
+- No implementation scope is currently recorded for Task 39.
 
 ## Unknown
-- The detailed scope and batches for Task 38 are not yet defined.
+- Detailed Task 39 scope has not yet been defined in the repository documentation.
 
 ## Known Issues
 - No documentation-only issues are currently tracked here.
@@ -164,7 +164,10 @@
   - Batch 3 — Document lifecycle consistency: CLOSED.
   - Batch 4 — Transactional chat exchange: CLOSED.
   - Batch 5 — Endpoint reliability test hardening: CLOSED.
-- Full backend regression suite: 301 tests passing.
+- Full backend regression suite: 307 tests passing.
+- Task 38 — End-to-End Product Verification: CLOSED / VERIFIED.
+- Task 38 verified the live backend/frontend product journey across authentication, document upload, document indexing, retrieval, RAG with Ollama, source evidence, conversation history and persistence, document deletion, and failure-path behavior.
+- Task 38 verification results: backend regression 307 tests passing; frontend regression 62 tests passing.
+- Task 38 required a safe exception-logging adjustment in `backend/app/main.py` and CPU-only Torch runtime selection in `backend/requirements.txt` for the verified local E2E environment because CUDA was unavailable on the current machine. This was a local/runtime verification detail, not a project-wide GPU compatibility claim.
 ## Next Task
-- Task 38 — End-to-End Product Verification.
-- Detailed scope and batches will be defined explicitly before implementation begins.
+- Task 39.

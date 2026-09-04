@@ -30,10 +30,7 @@ async def internal_server_error_handler(
     request: Request,
     exc: Exception,
 ):
-    logger.exception(
-        "Unhandled application exception",
-        exc_info=exc,
-    )
+    logger.exception("Unhandled application exception")
     return JSONResponse(
         status_code=500,
         content={"detail": INTERNAL_ERROR_DETAIL},

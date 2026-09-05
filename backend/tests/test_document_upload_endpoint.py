@@ -172,6 +172,7 @@ class DocumentUploadEndpointTests(unittest.IsolatedAsyncioTestCase):
             file_path=Path(
                 "/tmp/document-storage"
             ) / str(storage_path),
+            owner_id=str(self.owner_id),
         )
 
         self.assertIsInstance(result, Document)

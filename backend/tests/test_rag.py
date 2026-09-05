@@ -11,11 +11,12 @@ class FakeRetriever:
         self.results = list(results or [])
         self.calls = []
 
-    def retrieve(self, query, top_k=5):
+    def retrieve(self, query, top_k=5, owner_id=None):
         self.calls.append(
             {
                 "query": query,
                 "top_k": top_k,
+                "owner_id": owner_id,
             }
         )
         return list(self.results)
@@ -64,6 +65,7 @@ class RagServiceTests(unittest.TestCase):
         result = self.service.build_context(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
 
         self.assertEqual(
@@ -72,6 +74,7 @@ class RagServiceTests(unittest.TestCase):
                 {
                     "query": "hello",
                     "top_k": 2,
+                    "owner_id": "user-a",
                 }
             ],
         )
@@ -81,6 +84,7 @@ class RagServiceTests(unittest.TestCase):
         result = self.service.build_context(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
 
         self.assertEqual(result.query, "hello")
@@ -96,6 +100,7 @@ class RagServiceTests(unittest.TestCase):
         result = self.service.build_context(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
 
         self.assertEqual(
@@ -110,6 +115,7 @@ class RagServiceTests(unittest.TestCase):
         result = self.service.build_context(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
 
         self.assertEqual(result.sources, self.results)
@@ -126,7 +132,10 @@ class RagServiceTests(unittest.TestCase):
         retriever = FakeRetriever([])
         service = RagService(retriever)
 
-        result = service.build_context("missing")
+        result = service.build_context(
+            "missing",
+            owner_id="user-a",
+        )
 
         self.assertEqual(
             result,
@@ -136,6 +145,31 @@ class RagServiceTests(unittest.TestCase):
                 sources=[],
             ),
         )
+
+    def test_rejects_empty_owner_id(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "owner_id must not be empty",
+        ):
+            self.service.build_context(
+                query="hello",
+                owner_id="",
+            )
+
+    def test_generate_answer_rejects_empty_owner_id(self):
+        service = RagService(
+            self.retriever,
+            llm_provider=FakeLLMProvider(),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "owner_id must not be empty",
+        ):
+            service.generate_answer(
+                query="hello",
+                owner_id="",
+            )
 
     def test_retriever_errors_propagate(self):
         retriever = Mock()
@@ -149,16 +183,21 @@ class RagServiceTests(unittest.TestCase):
             RuntimeError,
             "retrieval failure",
         ):
-            service.build_context("hello")
+            service.build_context(
+                "hello",
+                owner_id="user-a",
+            )
 
     def test_repeated_build_context_calls_are_deterministic(self):
         first = self.service.build_context(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
         second = self.service.build_context(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
 
         self.assertEqual(first, second)
@@ -174,11 +213,13 @@ class RagServiceTests(unittest.TestCase):
         result = service.build_context(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
 
         retriever.retrieve.assert_called_once_with(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
         self.assertEqual(result.sources, self.results)
 
@@ -192,6 +233,7 @@ class RagServiceTests(unittest.TestCase):
         result = service.generate_answer(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
 
         self.assertEqual(len(self.retriever.calls), 1)
@@ -200,6 +242,7 @@ class RagServiceTests(unittest.TestCase):
             {
                 "query": "hello",
                 "top_k": 2,
+                "owner_id": "user-a",
             },
         )
         self.assertEqual(len(llm.calls), 1)
@@ -215,6 +258,7 @@ class RagServiceTests(unittest.TestCase):
         result = service.generate_answer(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
 
         self.assertEqual(
@@ -239,6 +283,7 @@ class RagServiceTests(unittest.TestCase):
         service.generate_answer(
             query="what is this?",
             top_k=2,
+            owner_id="user-a",
         )
 
         self.assertEqual(
@@ -264,10 +309,12 @@ class RagServiceTests(unittest.TestCase):
         first = service.generate_answer(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
         second = service.generate_answer(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
 
         self.assertEqual(
@@ -296,7 +343,10 @@ class RagServiceTests(unittest.TestCase):
             llm_provider=llm,
         )
 
-        result = service.generate_answer("hello")
+        result = service.generate_answer(
+            "hello",
+            owner_id="user-a",
+        )
 
         self.assertEqual(
             result.answer,
@@ -316,6 +366,7 @@ class RagServiceTests(unittest.TestCase):
         result = service.generate_answer(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
 
         self.assertEqual(result.query, "hello")
@@ -330,7 +381,10 @@ class RagServiceTests(unittest.TestCase):
             llm_provider=llm,
         )
 
-        result = service.generate_answer("missing")
+        result = service.generate_answer(
+            "missing",
+            owner_id="user-a",
+        )
 
         self.assertEqual(
             result.context,
@@ -354,7 +408,10 @@ class RagServiceTests(unittest.TestCase):
             ValueError,
             "LLM provider is required",
         ):
-            self.service.generate_answer("hello")
+            self.service.generate_answer(
+                "hello",
+                owner_id="user-a",
+            )
 
     def test_llm_failure_propagates(self):
         llm = Mock(spec=LLMProvider)
@@ -371,7 +428,10 @@ class RagServiceTests(unittest.TestCase):
             RuntimeError,
             "generation failure",
         ):
-            service.generate_answer("hello")
+            service.generate_answer(
+                "hello",
+                owner_id="user-a",
+            )
 
         llm.generate.assert_called_once()
 
@@ -393,10 +453,12 @@ class RagServiceTests(unittest.TestCase):
         first = first_service.generate_answer(
             "hello",
             top_k=2,
+            owner_id="user-a",
         )
         second = second_service.generate_answer(
             "hello",
             top_k=2,
+            owner_id="user-a",
         )
 
         self.assertEqual(first, second)

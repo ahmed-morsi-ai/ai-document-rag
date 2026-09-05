@@ -34,10 +34,15 @@ class RagService:
         self,
         query: str,
         top_k: int = 5,
+        owner_id: str = "",
     ) -> RagContext:
+        if not owner_id:
+            raise ValueError("owner_id must not be empty")
+
         results = self.retriever.retrieve(
             query=query,
             top_k=top_k,
+            owner_id=owner_id,
         )
 
         context = "\n\n".join(
@@ -55,13 +60,18 @@ class RagService:
         self,
         query: str,
         top_k: int = 5,
+        owner_id: str = "",
     ) -> RagResponse:
         if self.llm_provider is None:
             raise ValueError("LLM provider is required")
 
+        if not owner_id:
+            raise ValueError("owner_id must not be empty")
+
         context = self.build_context(
             query=query,
             top_k=top_k,
+            owner_id=owner_id,
         )
 
         prompt = (

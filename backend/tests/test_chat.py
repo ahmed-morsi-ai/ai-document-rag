@@ -29,11 +29,12 @@ class FakeRagService:
         )
         self.calls = []
 
-    def generate_answer(self, query, top_k=5):
+    def generate_answer(self, query, top_k=5, owner_id=None):
         self.calls.append(
             {
                 "query": query,
                 "top_k": top_k,
+                "owner_id": owner_id,
             }
         )
 
@@ -341,6 +342,7 @@ class ChatServiceTests(unittest.IsolatedAsyncioTestCase):
                 {
                     "query": "hello",
                     "top_k": 5,
+                    "owner_id": str(USER_ID),
                 }
             ],
         )
@@ -403,6 +405,7 @@ class ChatServiceTests(unittest.IsolatedAsyncioTestCase):
                 {
                     "query": "hello",
                     "top_k": 5,
+                    "owner_id": str(USER_ID),
                 }
             ],
         )
@@ -519,7 +522,12 @@ class ChatServiceTests(unittest.IsolatedAsyncioTestCase):
             hasattr(self.chat_service, "db")
         )
 
-    async def _failing_rag(self, query, top_k=5):
+    async def _failing_rag(
+        self,
+        query,
+        top_k=5,
+        owner_id=None,
+    ):
         raise RuntimeError("rag failure")
 
 

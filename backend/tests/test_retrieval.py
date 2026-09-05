@@ -19,11 +19,12 @@ class FakeVectorStore:
         self.results = results
         self.calls = []
 
-    def query(self, embedding, top_k=5):
+    def query(self, embedding, top_k=5, owner_id=None):
         self.calls.append(
             {
                 "embedding": list(embedding),
                 "top_k": top_k,
+                "owner_id": owner_id,
             }
         )
         return list(self.results)
@@ -67,6 +68,7 @@ class RetrievalTests(unittest.TestCase):
         results = self.retriever.retrieve(
             query="hello world",
             top_k=2,
+            owner_id="user-a",
         )
 
         self.assertEqual(
@@ -79,6 +81,7 @@ class RetrievalTests(unittest.TestCase):
         self.retriever.retrieve(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
 
         self.assertEqual(
@@ -87,6 +90,7 @@ class RetrievalTests(unittest.TestCase):
                 {
                     "embedding": [1.0, 0.0],
                     "top_k": 2,
+                    "owner_id": "user-a",
                 }
             ],
         )
@@ -95,6 +99,7 @@ class RetrievalTests(unittest.TestCase):
         results = self.retriever.retrieve(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
 
         self.assertEqual(
@@ -109,6 +114,7 @@ class RetrievalTests(unittest.TestCase):
         results = self.retriever.retrieve(
             query="hello",
             top_k=2,
+            owner_id="user-a",
         )
 
         self.assertEqual(
@@ -146,7 +152,7 @@ class RetrievalTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            retriever.retrieve("hello"),
+            retriever.retrieve("hello", owner_id="user-a"),
             [],
         )
 
@@ -174,6 +180,26 @@ class RetrievalTests(unittest.TestCase):
             self.retriever.retrieve(
                 "hello",
                 top_k=0,
+                owner_id="user-a",
+            )
+
+        self.assertEqual(
+            self.embedding_provider.calls,
+            [],
+        )
+        self.assertEqual(
+            self.vector_store.calls,
+            [],
+        )
+
+    def test_rejects_empty_owner_id(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "owner_id must not be empty",
+        ):
+            self.retriever.retrieve(
+                "hello",
+                owner_id="",
             )
 
         self.assertEqual(
@@ -200,7 +226,7 @@ class RetrievalTests(unittest.TestCase):
             RuntimeError,
             "embedding failure",
         ):
-            retriever.retrieve("hello")
+            retriever.retrieve("hello", owner_id="user-a")
 
     def test_vector_store_failure_propagates(self):
         provider = FakeEmbeddingProvider()
@@ -218,7 +244,7 @@ class RetrievalTests(unittest.TestCase):
             RuntimeError,
             "vector store failure",
         ):
-            retriever.retrieve("hello")
+            retriever.retrieve("hello", owner_id="user-a")
 
         self.assertEqual(
             provider.calls,

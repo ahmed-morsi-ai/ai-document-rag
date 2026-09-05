@@ -21,9 +21,13 @@ class DocumentIndexer:
         self,
         document_id: str,
         file_path: Path,
+        owner_id: str,
     ) -> int:
         if not document_id:
             raise ValueError("document_id must not be empty")
+
+        if not owner_id:
+            raise ValueError("owner_id must not be empty")
 
         parser = get_document_parser(file_path)
         extracted_text = parser.parse(file_path)
@@ -43,6 +47,7 @@ class DocumentIndexer:
 
         metadatas = [
             {
+                "owner_id": owner_id,
                 "document_id": document_id,
                 "chunk_index": str(chunk_index),
             }

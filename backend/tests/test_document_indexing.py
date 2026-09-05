@@ -80,6 +80,7 @@ class DocumentIndexingTests(unittest.TestCase):
                 indexed_count = indexer.index_document(
                     document_id=document_id,
                     file_path=file_path,
+                    owner_id="user-123",
                 )
 
         self.assertEqual(
@@ -108,10 +109,12 @@ class DocumentIndexingTests(unittest.TestCase):
                     "texts": expected_chunks,
                     "metadatas": [
                         {
+                            "owner_id": "user-123",
                             "document_id": "document-123",
                             "chunk_index": "0",
                         },
                         {
+                            "owner_id": "user-123",
                             "document_id": "document-123",
                             "chunk_index": "1",
                         },
@@ -140,6 +143,7 @@ class DocumentIndexingTests(unittest.TestCase):
             indexed_count = indexer.index_document(
                 document_id="empty-document",
                 file_path=file_path,
+                owner_id="user-123",
             )
 
         self.assertEqual(indexed_count, 0)
@@ -170,6 +174,7 @@ class DocumentIndexingTests(unittest.TestCase):
                 indexer.index_document(
                     document_id="document-123",
                     file_path=Path("document.txt"),
+                    owner_id="user-123",
                 )
 
         embedding_provider.embed_many.assert_not_called()
@@ -205,6 +210,7 @@ class DocumentIndexingTests(unittest.TestCase):
                     indexer.index_document(
                         document_id="document-123",
                         file_path=Path("document.txt"),
+                        owner_id="user-123",
                     )
 
         vector_store.add.assert_not_called()
@@ -239,6 +245,7 @@ class DocumentIndexingTests(unittest.TestCase):
                     indexer.index_document(
                         document_id="document-123",
                         file_path=Path("document.txt"),
+                        owner_id="user-123",
                     )
 
         self.assertEqual(
@@ -268,10 +275,12 @@ class DocumentIndexingTests(unittest.TestCase):
                 first_count = indexer.index_document(
                     document_id="document-123",
                     file_path=Path("document.txt"),
+                    owner_id="user-123",
                 )
                 second_count = indexer.index_document(
                     document_id="document-123",
                     file_path=Path("document.txt"),
+                    owner_id="user-123",
                 )
 
         self.assertEqual(first_count, 2)
@@ -292,6 +301,22 @@ class DocumentIndexingTests(unittest.TestCase):
             ],
         )
 
+    def test_rejects_empty_owner_id(self):
+        indexer = DocumentIndexer(
+            embedding_provider=Mock(),
+            vector_store=Mock(),
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "owner_id must not be empty",
+        ):
+            indexer.index_document(
+                document_id="document-123",
+                file_path=Path("document.txt"),
+                owner_id="",
+            )
+
     def test_rejects_empty_document_id(self):
         indexer = DocumentIndexer(
             embedding_provider=Mock(),
@@ -305,6 +330,7 @@ class DocumentIndexingTests(unittest.TestCase):
             indexer.index_document(
                 document_id="",
                 file_path=Path("document.txt"),
+                owner_id="user-123",
             )
 
 

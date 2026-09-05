@@ -29,6 +29,7 @@ async def search_documents(
     results = retriever.retrieve(
         query=request.query,
         top_k=request.top_k,
+        owner_id=str(current_user.id),
     )
 
     return RetrievalResponse(

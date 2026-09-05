@@ -28,8 +28,13 @@ class VectorStore(ABC):
         self,
         embedding: list[float],
         top_k: int = 5,
+        owner_id: str | None = None,
     ) -> list[VectorQueryResult]:
-        """Return nearest stored vectors in provider-independent form."""
+        """Return nearest stored vectors in provider-independent form.
+
+        When ``owner_id`` is provided, results must be restricted to that
+        owner at the vector-store level.
+        """
 
 
     @abstractmethod

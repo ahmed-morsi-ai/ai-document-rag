@@ -199,6 +199,69 @@ class VectorStoreTests(unittest.TestCase):
                 float,
             )
 
+    def test_query_filters_results_by_owner_id(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ChromaVectorStore(
+                persist_directory=Path(temp_dir),
+                collection_name="test_collection",
+            )
+
+            store.add(
+                ids=["owner-a", "owner-b"],
+                embeddings=[
+                    [1.0, 0.0],
+                    [0.99, 0.0],
+                ],
+                texts=[
+                    "owner a text",
+                    "owner b text",
+                ],
+                metadatas=[
+                    {
+                        "owner_id": "user-a",
+                        "document_id": "document-a",
+                        "chunk_index": "0",
+                    },
+                    {
+                        "owner_id": "user-b",
+                        "document_id": "document-b",
+                        "chunk_index": "0",
+                    },
+                ],
+            )
+
+            results = store.query(
+                embedding=[1.0, 0.0],
+                top_k=2,
+                owner_id="user-a",
+            )
+
+            self.assertEqual(
+                [result.id for result in results],
+                ["owner-a"],
+            )
+            self.assertEqual(
+                results[0].metadata["owner_id"],
+                "user-a",
+            )
+
+    def test_query_rejects_empty_owner_id(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ChromaVectorStore(
+                persist_directory=Path(temp_dir),
+                collection_name="test_collection",
+            )
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "owner_id must not be empty",
+            ):
+                store.query(
+                    embedding=[1.0, 0.0],
+                    top_k=1,
+                    owner_id="",
+                )
+
     def test_query_order_and_top_k_are_respected(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ChromaVectorStore(

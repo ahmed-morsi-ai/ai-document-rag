@@ -75,6 +75,7 @@ class ChatService:
                 self.rag_service.generate_answer(
                     query=query,
                     top_k=top_k,
+                    owner_id=str(user_id),
                 )
             )
 

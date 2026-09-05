@@ -115,6 +115,7 @@ class RetrievalEndpointTests(unittest.TestCase):
         self.fake_retriever.retrieve.assert_called_once_with(
             query="what is the refund policy?",
             top_k=7,
+            owner_id="user-1",
         )
 
     def test_multiple_results_preserve_order_and_fields(self):

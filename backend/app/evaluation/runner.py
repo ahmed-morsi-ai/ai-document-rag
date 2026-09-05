@@ -290,6 +290,7 @@ def _run_real_evaluation(
             indexer.index_document(
                 document_id=document_id,
                 file_path=file_path,
+                owner_id="evaluation",
             )
 
         retriever = Retriever(
@@ -302,6 +303,7 @@ def _run_real_evaluation(
             lambda case, limit: retriever.retrieve(
                 case.query,
                 top_k=limit,
+                owner_id="evaluation",
             ),
             k,
             evaluation_name="retrieval-v1-real",

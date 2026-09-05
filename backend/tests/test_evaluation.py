@@ -341,8 +341,8 @@ class EvaluationTests(unittest.TestCase):
                 return [1.0, 0.0]
 
         class FakeVectorStore:
-            def query(self, embedding, top_k=5):
-                self.call = (embedding, top_k)
+            def query(self, embedding, top_k=5, owner_id=None):
+                self.call = (embedding, top_k, owner_id)
                 return []
 
         retriever = Retriever(
@@ -351,7 +351,11 @@ class EvaluationTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            retriever.retrieve("hello", top_k=2),
+            retriever.retrieve(
+                "hello",
+                top_k=2,
+                owner_id="evaluation",
+            ),
             [],
         )
 
@@ -368,8 +372,8 @@ class EvaluationTests(unittest.TestCase):
         )
 
         class FakeRetriever:
-            def retrieve(self, query, top_k=5):
-                self.asserted = (query, top_k)
+            def retrieve(self, query, top_k=5, owner_id=None):
+                self.asserted = (query, top_k, owner_id)
                 return [result]
 
         class FakeLLM:
@@ -384,6 +388,7 @@ class EvaluationTests(unittest.TestCase):
         response = service.generate_answer(
             "hello",
             top_k=1,
+            owner_id="evaluation",
         )
 
         self.assertEqual(response.answer, "generated answer")

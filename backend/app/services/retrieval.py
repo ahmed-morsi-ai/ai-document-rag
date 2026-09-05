@@ -28,6 +28,7 @@ class Retriever:
         self,
         query: str,
         top_k: int = 5,
+        owner_id: str = "",
     ) -> list[RetrievalResult]:
         if not query.strip():
             raise ValueError("query must not be empty")
@@ -35,11 +36,15 @@ class Retriever:
         if top_k <= 0:
             raise ValueError("top_k must be greater than 0")
 
+        if not owner_id:
+            raise ValueError("owner_id must not be empty")
+
         query_embedding = self.embedding_provider.embed(query)
 
         vector_results = self.vector_store.query(
             embedding=query_embedding,
             top_k=top_k,
+            owner_id=owner_id,
         )
 
         return [

@@ -59,15 +59,24 @@ class ChromaVectorStore(VectorStore):
         self,
         embedding: list[float],
         top_k: int = 5,
+        owner_id: str | None = None,
     ) -> list[VectorQueryResult]:
         if top_k <= 0:
             raise ValueError("top_k must be greater than 0")
 
-        results = self.collection.query(
-            query_embeddings=[embedding],
-            n_results=top_k,
-            include=["documents", "metadatas", "distances"],
-        )
+        if owner_id is not None and not owner_id:
+            raise ValueError("owner_id must not be empty")
+
+        query_kwargs = {
+            "query_embeddings": [embedding],
+            "n_results": top_k,
+            "include": ["documents", "metadatas", "distances"],
+        }
+
+        if owner_id is not None:
+            query_kwargs["where"] = {"owner_id": owner_id}
+
+        results = self.collection.query(**query_kwargs)
 
         ids = results["ids"][0]
         documents = results["documents"][0]

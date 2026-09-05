@@ -117,6 +117,7 @@ async def upload_document(
             file_path=(
                 get_storage_root() / document.storage_path
             ),
+            owner_id=str(current_user.id),
         )
     except Exception:
         try:

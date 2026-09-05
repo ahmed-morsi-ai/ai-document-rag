@@ -22,6 +22,8 @@ from starlette.datastructures import Headers
 from app.api.dependencies.auth import get_current_user
 from app.db.database import get_db
 from app.api.routes.documents import upload_document
+from app.api.routes.documents import list_documents
+from app.schemas.documents import DocumentListResponse
 from app.db.models import Document, User
 from app.main import app
 
@@ -554,6 +556,19 @@ class DocumentListEndpointTests(unittest.TestCase):
     def tearDown(self):
         app.dependency_overrides.clear()
 
+    def _count_result(self, count):
+        result = mock.Mock()
+        result.scalar_one.return_value = count
+        return result
+
+    def _items_result(self, documents):
+        scalars = mock.Mock()
+        scalars.all.return_value = documents
+
+        result = mock.Mock()
+        result.scalars.return_value = scalars
+        return result
+
     def test_requires_authentication(self):
         app.dependency_overrides.clear()
 
@@ -611,12 +626,10 @@ class DocumentListEndpointTests(unittest.TestCase):
             ),
         )
 
-        scalars = mock.Mock()
-        scalars.all.return_value = [newer, older]
-
-        self.mock_db.execute.return_value = mock.Mock(
-            scalars=lambda: scalars,
-        )
+        self.mock_db.execute.side_effect = [
+            self._count_result(2),
+            self._items_result([newer, older]),
+        ]
 
         response = self.client.get("/documents")
 
@@ -624,35 +637,270 @@ class DocumentListEndpointTests(unittest.TestCase):
 
         body = response.json()
 
+        self.assertEqual(body["total_count"], 2)
+        self.assertEqual(body["page"], 1)
+        self.assertEqual(body["page_size"], 20)
         self.assertEqual(
-            len(body),
-            2,
+            [item["original_filename"] for item in body["items"]],
+            ["newer.pdf", "older.pdf"],
         )
-        self.assertEqual(
-            body[0]["original_filename"],
-            "newer.pdf",
-        )
-        self.assertNotIn(
-            "owner_id",
-            body[0],
-        )
-        self.assertNotIn(
-            "storage_path",
-            body[0],
-        )
+        self.assertNotIn("owner_id", body["items"][0])
+        self.assertNotIn("storage_path", body["items"][0])
 
     def test_empty_document_list_returns_empty_collection(self):
-        scalars = mock.Mock()
-        scalars.all.return_value = []
-
-        self.mock_db.execute.return_value = mock.Mock(
-            scalars=lambda: scalars,
-        )
+        self.mock_db.execute.side_effect = [
+            self._count_result(0),
+            self._items_result([]),
+        ]
 
         response = self.client.get("/documents")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), [])
+        self.assertEqual(
+            response.json(),
+            {
+                "items": [],
+                "total_count": 0,
+                "page": 1,
+                "page_size": 20,
+            },
+        )
+
+    def test_filename_search_returns_filtered_results_and_count(self):
+        matching = Document(
+            id=uuid4(),
+            owner_id=self.owner_id,
+            original_filename="Quarterly-Report.pdf",
+            mime_type="application/pdf",
+            storage_path="owned/report.pdf",
+            processing_status="uploaded",
+            created_at=datetime(
+                2026,
+                8,
+                22,
+                21,
+                0,
+                tzinfo=timezone.utc,
+            ),
+            updated_at=datetime(
+                2026,
+                8,
+                22,
+                21,
+                0,
+                tzinfo=timezone.utc,
+            ),
+        )
+
+        self.mock_db.execute.side_effect = [
+            self._count_result(1),
+            self._items_result([matching]),
+        ]
+
+        response = self.client.get(
+            "/documents",
+            params={
+                "search": "quarterly",
+                "page": 1,
+                "page_size": 20,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["total_count"], 1)
+        self.assertEqual(
+            response.json()["items"][0]["original_filename"],
+            "Quarterly-Report.pdf",
+        )
+
+    def test_filename_search_can_be_case_insensitive(self):
+        matching = Document(
+            id=uuid4(),
+            owner_id=self.owner_id,
+            original_filename="Quarterly-Report.pdf",
+            mime_type="application/pdf",
+            storage_path="owned/report.pdf",
+            processing_status="uploaded",
+            created_at=datetime(
+                2026,
+                8,
+                22,
+                21,
+                0,
+                tzinfo=timezone.utc,
+            ),
+            updated_at=datetime(
+                2026,
+                8,
+                22,
+                21,
+                0,
+                tzinfo=timezone.utc,
+            ),
+        )
+
+        self.mock_db.execute.side_effect = [
+            self._count_result(1),
+            self._items_result([matching]),
+        ]
+
+        response = self.client.get(
+            "/documents",
+            params={"search": "REPORT"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["total_count"], 1)
+        self.assertEqual(
+            response.json()["items"][0]["original_filename"],
+            "Quarterly-Report.pdf",
+        )
+
+    def test_missing_search_behaves_as_unfiltered_list(self):
+        self.mock_db.execute.side_effect = [
+            self._count_result(0),
+            self._items_result([]),
+        ]
+
+        response = self.client.get("/documents")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["total_count"], 0)
+
+    def test_empty_search_behaves_as_unfiltered_list(self):
+        self.mock_db.execute.side_effect = [
+            self._count_result(0),
+            self._items_result([]),
+        ]
+
+        response = self.client.get(
+            "/documents",
+            params={"search": ""},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["total_count"], 0)
+
+    def test_page_and_page_size_are_returned(self):
+        self.mock_db.execute.side_effect = [
+            self._count_result(3),
+            self._items_result([]),
+        ]
+
+        response = self.client.get(
+            "/documents",
+            params={"page": 2, "page_size": 2},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["page"],
+            2,
+        )
+        self.assertEqual(
+            response.json()["page_size"],
+            2,
+        )
+
+    def test_beyond_range_returns_empty_items(self):
+        self.mock_db.execute.side_effect = [
+            self._count_result(3),
+            self._items_result([]),
+        ]
+
+        response = self.client.get(
+            "/documents",
+            params={"page": 3, "page_size": 2},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["items"], [])
+        self.assertEqual(response.json()["total_count"], 3)
+
+    def test_page_below_one_is_rejected(self):
+        response = self.client.get(
+            "/documents",
+            params={"page": 0},
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_page_size_below_one_is_rejected(self):
+        response = self.client.get(
+            "/documents",
+            params={"page_size": 0},
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_page_size_above_maximum_is_rejected(self):
+        response = self.client.get(
+            "/documents",
+            params={"page_size": 101},
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_authenticated_list_keeps_owner_filter_and_deterministic_order(self):
+        self.mock_db.execute.side_effect = [
+            self._count_result(0),
+            self._items_result([]),
+        ]
+
+        response = self.client.get("/documents")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.mock_db.execute.await_count, 2)
+
+        count_statement = self.mock_db.execute.await_args_list[0].args[0]
+        items_statement = self.mock_db.execute.await_args_list[1].args[0]
+
+        count_sql = str(
+            count_statement.compile(compile_kwargs={"literal_binds": True})
+        )
+        items_sql = str(
+            items_statement.compile(compile_kwargs={"literal_binds": True})
+        )
+
+        self.assertIn("owner_id", count_sql)
+        self.assertIn("owner_id", items_sql)
+        self.assertIn(self.owner_id.hex, count_sql)
+        self.assertIn(self.owner_id.hex, items_sql)
+        self.assertIn("created_at DESC", items_sql)
+        self.assertIn("id DESC", items_sql)
+
+    def test_search_total_count_is_filtered_population(self):
+        self.mock_db.execute.side_effect = [
+            self._count_result(4),
+            self._items_result([]),
+        ]
+
+        response = self.client.get(
+            "/documents",
+            params={
+                "search": "report",
+                "page": 1,
+                "page_size": 2,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["total_count"], 4)
+
+        count_statement = self.mock_db.execute.await_args_list[0].args[0]
+        items_statement = self.mock_db.execute.await_args_list[1].args[0]
+
+        count_sql = str(
+            count_statement.compile(compile_kwargs={"literal_binds": True})
+        )
+        items_sql = str(
+            items_statement.compile(compile_kwargs={"literal_binds": True})
+        )
+
+        self.assertIn("original_filename", count_sql)
+        self.assertIn("original_filename", items_sql)
+        self.assertIn("report", count_sql.lower())
+        self.assertIn("report", items_sql.lower())
 
 
 class DocumentDeleteEndpointTests(unittest.IsolatedAsyncioTestCase):

@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import (
@@ -5,10 +6,11 @@ from fastapi import (
     Depends,
     File,
     HTTPException,
+    Query,
     UploadFile,
     status,
 )
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import get_current_user
@@ -23,7 +25,7 @@ from app.services.document_validation import validate_document_upload
 from app.services.document_deletion import DocumentDeletionService
 from app.services.document_indexing_factory import get_document_indexer
 from app.services.vector_store_factory import get_vector_store
-from app.schemas.documents import DocumentResponse
+from app.schemas.documents import DocumentListResponse, DocumentResponse
 
 
 router = APIRouter(
@@ -34,25 +36,44 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=list[DocumentResponse],
+    response_model=DocumentListResponse,
 )
 async def list_documents(
+    search: str | None = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+) -> DocumentListResponse:
+    filters = [
+        Document.owner_id == current_user.id,
+    ]
+
+    if search:
+        filters.append(Document.original_filename.ilike(f"%{search}%"))
+
+    total_result = await db.execute(
+        select(func.count(Document.id)).where(*filters)
+    )
+    total_count = total_result.scalar_one()
+
     result = await db.execute(
         select(Document)
-        .where(
-            Document.owner_id == current_user.id,
-        )
+        .where(*filters)
         .order_by(
             Document.created_at.desc(),
             Document.id.desc(),
         )
+        .offset((page - 1) * page_size)
+        .limit(page_size)
     )
 
-    return list(result.scalars().all())
-
+    return DocumentListResponse(
+        items=list(result.scalars().all()),
+        total_count=total_count,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.post(

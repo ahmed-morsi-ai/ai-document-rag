@@ -13,3 +13,10 @@ class DocumentResponse(BaseModel):
     processing_status: str
     created_at: datetime
     updated_at: datetime
+
+
+class DocumentListResponse(BaseModel):
+    items: list[DocumentResponse]
+    total_count: int
+    page: int
+    page_size: int

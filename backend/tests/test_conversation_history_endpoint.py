@@ -32,13 +32,45 @@ class FakePersistenceService:
         self.conversations = []
         self.messages = []
         self.conversation_error = None
+        self.get_conversations_calls = []
 
-    async def get_conversations(self, owner_id):
-        return [
+    async def get_conversations(
+        self,
+        owner_id,
+        search=None,
+        page=1,
+        page_size=20,
+    ):
+        self.get_conversations_calls.append(
+            {
+                "owner_id": owner_id,
+                "search": search,
+                "page": page,
+                "page_size": page_size,
+            }
+        )
+
+        conversations = [
             conversation
             for conversation in self.conversations
             if conversation.owner_id == owner_id
         ]
+
+        if search:
+            search_value = search.casefold()
+            conversations = [
+                conversation
+                for conversation in conversations
+                if conversation.title
+                and search_value in conversation.title.casefold()
+            ]
+
+        total_count = len(conversations)
+
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        return conversations[start:end], total_count
 
     async def get_conversation(
         self,
@@ -180,6 +212,9 @@ class ConversationHistoryEndpointTests(unittest.TestCase):
             response.json(),
             {
                 "conversations": [],
+                "total_count": 0,
+                "page": 1,
+                "page_size": 20,
             },
         )
 
@@ -244,6 +279,18 @@ class ConversationHistoryEndpointTests(unittest.TestCase):
             1,
         )
         self.assertEqual(
+            body["total_count"],
+            1,
+        )
+        self.assertEqual(
+            body["page"],
+            1,
+        )
+        self.assertEqual(
+            body["page_size"],
+            20,
+        )
+        self.assertEqual(
             body["conversations"][0]["id"],
             str(CONVERSATION_ID),
         )
@@ -251,6 +298,134 @@ class ConversationHistoryEndpointTests(unittest.TestCase):
             "owner_id",
             body["conversations"][0],
         )
+
+    def test_conversation_list_forwards_query_parameters_to_persistence(
+        self,
+    ):
+        response = self.client.get(
+            "/conversations",
+            params={
+                "search": "report",
+                "page": 2,
+                "page_size": 5,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.persistence.get_conversations_calls,
+            [
+                {
+                    "owner_id": USER_ID,
+                    "search": "report",
+                    "page": 2,
+                    "page_size": 5,
+                }
+            ],
+        )
+
+
+    def test_conversation_list_search_and_pagination_are_serialized(
+        self,
+    ):
+        conversations = [
+            Conversation(
+                id=UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+                owner_id=USER_ID,
+                title="Report Alpha",
+                created_at=datetime(
+                    2026,
+                    1,
+                    3,
+                    tzinfo=timezone.utc,
+                ),
+                updated_at=datetime(
+                    2026,
+                    1,
+                    3,
+                    tzinfo=timezone.utc,
+                ),
+            ),
+            Conversation(
+                id=UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"),
+                owner_id=USER_ID,
+                title="Report Beta",
+                created_at=datetime(
+                    2026,
+                    1,
+                    2,
+                    tzinfo=timezone.utc,
+                ),
+                updated_at=datetime(
+                    2026,
+                    1,
+                    2,
+                    tzinfo=timezone.utc,
+                ),
+            ),
+        ]
+        unrelated = Conversation(
+            id=UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc"),
+            owner_id=USER_ID,
+            title="Meeting Notes",
+        )
+
+        self.persistence.conversations = [
+            conversations[0],
+            unrelated,
+            conversations[1],
+        ]
+
+        response = self.client.get(
+            "/conversations",
+            params={
+                "search": "report",
+                "page": 2,
+                "page_size": 1,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        body = response.json()
+
+        self.assertEqual(body["total_count"], 2)
+        self.assertEqual(body["page"], 2)
+        self.assertEqual(body["page_size"], 1)
+        self.assertEqual(
+            [item["title"] for item in body["conversations"]],
+            ["Report Beta"],
+        )
+
+
+    def test_conversation_list_page_zero_is_rejected(self):
+        response = self.client.get(
+            "/conversations",
+            params={"page": 0},
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+
+    def test_conversation_list_page_size_zero_is_rejected(self):
+        response = self.client.get(
+            "/conversations",
+            params={"page_size": 0},
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+
+    def test_conversation_list_page_size_above_maximum_is_rejected(
+        self,
+    ):
+        response = self.client.get(
+            "/conversations",
+            params={"page_size": 101},
+        )
+
+        self.assertEqual(response.status_code, 422)
+
 
     def test_delete_conversation_requires_authentication(self):
         app.dependency_overrides.clear()

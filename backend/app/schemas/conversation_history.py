@@ -30,3 +30,6 @@ class ConversationHistoryResponse(BaseModel):
 
 class ConversationListResponse(BaseModel):
     conversations: list[ConversationHistoryConversationResponse]
+    total_count: int
+    page: int
+    page_size: int

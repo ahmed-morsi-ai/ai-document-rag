@@ -1,6 +1,7 @@
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.dependencies.auth import get_current_user
 from app.db.models import User
@@ -29,14 +30,20 @@ router = APIRouter(
     response_model=ConversationListResponse,
 )
 async def list_conversations(
+    search: str | None = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
     current_user: User = Depends(get_current_user),
     persistence_service: ChatPersistenceService = Depends(
         get_chat_persistence_service,
     ),
-):
-    conversations = (
+) -> ConversationListResponse:
+    conversations, total_count = (
         await persistence_service.get_conversations(
             owner_id=current_user.id,
+            search=search,
+            page=page,
+            page_size=page_size,
         )
     )
 
@@ -47,6 +54,9 @@ async def list_conversations(
             )
             for conversation in conversations
         ],
+        total_count=total_count,
+        page=page,
+        page_size=page_size,
     )
 
 

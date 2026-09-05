@@ -41,19 +41,36 @@ class ChatPersistenceService:
     async def get_conversations(
         self,
         owner_id: UUID,
-    ) -> list[Conversation]:
+        search: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> tuple[list[Conversation], int]:
+        filters = [
+            Conversation.owner_id == owner_id,
+        ]
+
+        if search:
+            filters.append(
+                Conversation.title.ilike(f"%{search}%")
+            )
+
+        total_result = await self.db.execute(
+            select(func.count(Conversation.id)).where(*filters)
+        )
+        total_count = total_result.scalar_one()
+
         result = await self.db.execute(
             select(Conversation)
-            .where(
-                Conversation.owner_id == owner_id,
-            )
+            .where(*filters)
             .order_by(
                 Conversation.created_at.desc(),
                 Conversation.id.desc(),
             )
+            .offset((page - 1) * page_size)
+            .limit(page_size)
         )
 
-        return list(result.scalars().all())
+        return list(result.scalars().all()), total_count
 
     async def get_conversation(
         self,

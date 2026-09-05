@@ -24,6 +24,14 @@ class AsyncScalarsResult:
         return self.values
 
 
+class AsyncScalarCountResult:
+    def __init__(self, value):
+        self.value = value
+
+    def scalar_one(self):
+        return self.value
+
+
 class ChatPersistenceServiceTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.db = Mock()
@@ -81,12 +89,13 @@ class ChatPersistenceServiceTests(unittest.IsolatedAsyncioTestCase):
         ]
 
         self.db.execute = AsyncMock(
-            return_value=AsyncScalarsResult(
-                conversations,
-            ),
+            side_effect=[
+                AsyncScalarCountResult(2),
+                AsyncScalarsResult(conversations),
+            ],
         )
 
-        result = await self.service.get_conversations(
+        result, total_count = await self.service.get_conversations(
             owner_id=owner_id,
         )
 
@@ -94,27 +103,253 @@ class ChatPersistenceServiceTests(unittest.IsolatedAsyncioTestCase):
             result,
             conversations,
         )
-        self.db.execute.assert_awaited_once()
-
-        statement = (
-            self.db.execute.await_args.args[0]
-        )
-        order_by_columns = statement._order_by_clauses
-
         self.assertEqual(
-            len(order_by_columns),
+            total_count,
             2,
         )
-        self.assertTrue(
-            order_by_columns[0].element.compare(
-                Conversation.__table__.c.created_at,
-            ),
+        self.assertEqual(
+            self.db.execute.await_count,
+            2,
         )
-        self.assertTrue(
-            order_by_columns[1].element.compare(
-                Conversation.__table__.c.id,
-            ),
+
+        count_statement = self.db.execute.await_args_list[0].args[0]
+        items_statement = self.db.execute.await_args_list[1].args[0]
+
+        count_sql = str(
+            count_statement.compile(
+                compile_kwargs={"literal_binds": True}
+            )
         )
+        items_sql = str(
+            items_statement.compile(
+                compile_kwargs={"literal_binds": True}
+            )
+        )
+
+        self.assertIn("owner_id", count_sql)
+        self.assertIn("owner_id", items_sql)
+        self.assertIn(owner_id.hex, count_sql)
+        self.assertIn(owner_id.hex, items_sql)
+        self.assertIn("created_at DESC", items_sql)
+        self.assertIn("id DESC", items_sql)
+
+    async def test_get_conversations_default_page_returns_first_page_and_total_count(
+        self,
+    ):
+        from uuid import UUID
+
+        owner_id = UUID(
+            "11111111-1111-4111-8111-111111111111"
+        )
+        conversations = [
+            Conversation(owner_id=owner_id),
+            Conversation(owner_id=owner_id),
+        ]
+
+        self.db.execute = AsyncMock(
+            side_effect=[
+                AsyncScalarCountResult(25),
+                AsyncScalarsResult(conversations),
+            ],
+        )
+
+        result, total_count = await self.service.get_conversations(
+            owner_id=owner_id,
+        )
+
+        self.assertEqual(result, conversations)
+        self.assertEqual(total_count, 25)
+
+        statement = self.db.execute.await_args_list[1].args[0]
+
+        self.assertEqual(statement._limit_clause.value, 20)
+        self.assertEqual(statement._offset_clause.value, 0)
+
+    async def test_get_conversations_search_filters_by_title(
+        self,
+    ):
+        from uuid import UUID
+
+        owner_id = UUID(
+            "11111111-1111-4111-8111-111111111111"
+        )
+        conversation = Conversation(
+            owner_id=owner_id,
+            title="Quarterly Report",
+        )
+
+        self.db.execute = AsyncMock(
+            side_effect=[
+                AsyncScalarCountResult(1),
+                AsyncScalarsResult([conversation]),
+            ],
+        )
+
+        result, total_count = await self.service.get_conversations(
+            owner_id=owner_id,
+            search="report",
+        )
+
+        self.assertEqual(result, [conversation])
+        self.assertEqual(total_count, 1)
+
+        count_statement = self.db.execute.await_args_list[0].args[0]
+        items_statement = self.db.execute.await_args_list[1].args[0]
+
+        count_sql = str(
+            count_statement.compile(
+                compile_kwargs={"literal_binds": True}
+            )
+        )
+        items_sql = str(
+            items_statement.compile(
+                compile_kwargs={"literal_binds": True}
+            )
+        )
+
+        self.assertIn("title", count_sql)
+        self.assertIn("title", items_sql)
+        self.assertIn("report", count_sql)
+        self.assertIn("report", items_sql)
+
+    async def test_get_conversations_search_total_count_is_before_pagination(
+        self,
+    ):
+        from uuid import UUID
+
+        owner_id = UUID(
+            "11111111-1111-4111-8111-111111111111"
+        )
+        conversations = [
+            Conversation(
+                owner_id=owner_id,
+                title="Report 4",
+            ),
+            Conversation(
+                owner_id=owner_id,
+                title="Report 5",
+            ),
+        ]
+
+        self.db.execute = AsyncMock(
+            side_effect=[
+                AsyncScalarCountResult(5),
+                AsyncScalarsResult(conversations),
+            ],
+        )
+
+        result, total_count = await self.service.get_conversations(
+            owner_id=owner_id,
+            search="report",
+            page=3,
+            page_size=2,
+        )
+
+        self.assertEqual(result, conversations)
+        self.assertEqual(total_count, 5)
+
+        items_statement = self.db.execute.await_args_list[1].args[0]
+
+        self.assertEqual(items_statement._limit_clause.value, 2)
+        self.assertEqual(items_statement._offset_clause.value, 4)
+
+    async def test_get_conversations_pagination_returns_correct_slice(
+        self,
+    ):
+        from uuid import UUID
+
+        owner_id = UUID(
+            "11111111-1111-4111-8111-111111111111"
+        )
+        conversations = [
+            Conversation(owner_id=owner_id),
+            Conversation(owner_id=owner_id),
+        ]
+
+        self.db.execute = AsyncMock(
+            side_effect=[
+                AsyncScalarCountResult(7),
+                AsyncScalarsResult(conversations),
+            ],
+        )
+
+        result, total_count = await self.service.get_conversations(
+            owner_id=owner_id,
+            page=2,
+            page_size=2,
+        )
+
+        self.assertEqual(result, conversations)
+        self.assertEqual(total_count, 7)
+
+        statement = self.db.execute.await_args_list[1].args[0]
+
+        self.assertEqual(statement._limit_clause.value, 2)
+        self.assertEqual(statement._offset_clause.value, 2)
+
+    async def test_get_conversations_beyond_available_results_returns_empty_page(
+        self,
+    ):
+        from uuid import UUID
+
+        owner_id = UUID(
+            "11111111-1111-4111-8111-111111111111"
+        )
+
+        self.db.execute = AsyncMock(
+            side_effect=[
+                AsyncScalarCountResult(3),
+                AsyncScalarsResult([]),
+            ],
+        )
+
+        result, total_count = await self.service.get_conversations(
+            owner_id=owner_id,
+            page=3,
+            page_size=2,
+        )
+
+        self.assertEqual(result, [])
+        self.assertEqual(total_count, 3)
+
+    async def test_get_conversations_search_is_applied_to_title_only(
+        self,
+    ):
+        from uuid import UUID
+
+        owner_id = UUID(
+            "11111111-1111-4111-8111-111111111111"
+        )
+
+        self.db.execute = AsyncMock(
+            side_effect=[
+                AsyncScalarCountResult(0),
+                AsyncScalarsResult([]),
+            ],
+        )
+
+        await self.service.get_conversations(
+            owner_id=owner_id,
+            search="report",
+        )
+
+        count_statement = self.db.execute.await_args_list[0].args[0]
+        items_statement = self.db.execute.await_args_list[1].args[0]
+
+        count_sql = str(
+            count_statement.compile(
+                compile_kwargs={"literal_binds": True}
+            )
+        )
+        items_sql = str(
+            items_statement.compile(
+                compile_kwargs={"literal_binds": True}
+            )
+        )
+
+        for sql in (count_sql, items_sql):
+            self.assertIn("owner_id", sql)
+            self.assertIn("title", sql)
 
     async def test_get_conversation_returns_owned_conversation(self):
         from uuid import UUID

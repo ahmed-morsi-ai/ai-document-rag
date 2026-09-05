@@ -582,3 +582,51 @@ ai-document-rag/
 The project is developed incrementally with focused implementation tasks and verification gates.
 
 The current repository includes authenticated document workflows, semantic retrieval, RAG orchestration, local LLM integration, PostgreSQL-backed conversations and messages, document and conversation deletion, a shared authenticated frontend shell, and automated regression testing.
+
+## Troubleshooting / Reset
+
+### Normal Restart
+
+Use the normal Compose workflow when you only need to restart the local services. This is non-destructive and preserves PostgreSQL, vector-store, and document-storage state.
+
+Restart the existing Compose services without resetting persisted data.
+
+### Database Reset
+
+Compose PostgreSQL persists its state in the Docker named volume `ai-document-rag_postgres_data`.
+
+A database reset is **destructive**: removing that volume destroys the PostgreSQL database state. Do not remove the volume as part of normal troubleshooting. Only perform a database reset deliberately when a fresh database is actually required.
+
+### Vector-store Reset
+
+The Chroma vector store is filesystem-backed. The repository currently contains both `./vector_store` and `./backend/vector_store`, so the relevant path depends on the runtime context in which the application is running.
+
+A vector-store reset is **destructive**: removing the relevant persisted vector-store directory removes indexed vectors and requires the affected documents to be indexed again. Do not use an ambiguous `rm -rf vector_store` command without first confirming which runtime path is active.
+
+### Document-storage Reset
+
+Document storage is also filesystem-backed, with both `./storage` and `./backend/storage` present in the repository. The correct path is context-sensitive and depends on how the backend is running.
+
+A document-storage reset is **destructive**. Deleting stored document files independently can leave database metadata inconsistent with the filesystem. For ordinary cleanup, prefer deleting documents through the application rather than removing storage files directly.
+
+### Full Local Reset
+
+A full local reset is **destructive** and affects the local database, vector store, and document storage.
+
+Treat it as a deliberate recovery operation, not a default troubleshooting step. Before removing any state, identify the active runtime paths, understand what will be lost, and back up anything that must be preserved. Do not use a blind multi-delete command or automated reset script.
+
+### Common Runtime Problems
+
+- **`rag_backend` container-name conflict:** A stale Compose backend container can keep the `rag_backend` name or host port occupied. Inspect the existing container and its Compose project before removing anything; do not automatically remove containers as part of normal startup troubleshooting.
+
+- **PostgreSQL host vs. Compose addressing:** The host-native database URL uses the host-mapped PostgreSQL port, while the Compose backend reaches PostgreSQL through the Compose service name on port `5432`. Check which runtime is making the connection before changing `DATABASE_URL`.
+
+- **Compose backend → host Ollama:** The Compose backend reaches host Ollama through `http://host.docker.internal:11434`. On the current Compose workflow, the `host.docker.internal` host-gateway mapping is configured for this connection.
+
+- **Host backend → Ollama:** When the backend runs directly on the host, use `http://localhost:11434`.
+
+- **Stale Docker image after dependency or Dockerfile changes:** Source-only changes do not require an image rebuild because Compose bind-mounts `./backend:/app`. Changes to `requirements.txt` or the Dockerfile do require rebuilding the backend image before restarting the container.
+
+- **Docker build package-download/network timeout:** A Docker build can fail while downloading Python packages because of a package-index or network timeout. Treat this as a build/download problem first rather than changing application code or reset state.
+
+- **Frontend Vite not running / port 5173 unavailable:** The frontend runs separately from the current Compose services. If nothing is listening on the documented Vite port `5173`, start the frontend development server and then retry the frontend check.

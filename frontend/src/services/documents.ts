@@ -1,5 +1,8 @@
 import { ApiError } from "./api";
-import type { DocumentItem } from "../types/documents";
+import type {
+  DocumentItem,
+  DocumentListResponse,
+} from "../types/documents";
 
 const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"
@@ -67,13 +70,57 @@ async function authenticatedRequest(
   return payload;
 }
 
-export const documentsApi = {
-  list(token: string) {
-    return authenticatedRequest(
+type DocumentListParams = {
+  search?: string;
+  page?: number;
+  page_size?: number;
+};
+
+function listDocuments(token: string): Promise<DocumentItem[]>;
+function listDocuments(
+  token: string,
+  params: DocumentListParams,
+): Promise<DocumentListResponse>;
+async function listDocuments(
+  token: string,
+  params?: DocumentListParams,
+): Promise<DocumentItem[] | DocumentListResponse> {
+  if (params === undefined) {
+    const response = await authenticatedRequest(
       "/documents",
       token,
-    ) as Promise<DocumentItem[]>;
-  },
+    ) as DocumentListResponse;
+
+    return response.items;
+  }
+
+  const query = new URLSearchParams();
+
+  if (params.search !== undefined) {
+    query.set("search", params.search);
+  }
+
+  if (params.page !== undefined) {
+    query.set("page", String(params.page));
+  }
+
+  if (params.page_size !== undefined) {
+    query.set("page_size", String(params.page_size));
+  }
+
+  const queryString = query.toString();
+  const path = queryString
+    ? `/documents?${queryString}`
+    : "/documents";
+
+  return authenticatedRequest(
+    path,
+    token,
+  ) as Promise<DocumentListResponse>;
+}
+
+export const documentsApi = {
+  list: listDocuments,
 
   upload(
     token: string,

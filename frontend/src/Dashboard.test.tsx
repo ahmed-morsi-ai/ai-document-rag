@@ -58,6 +58,22 @@ function makeDocument(
   };
 }
 
+function makeDocumentListResponse(
+  items: DocumentItem[] = [],
+  overrides: Partial<{
+    total_count: number;
+    page: number;
+    page_size: number;
+  }> = {},
+) {
+  return {
+    items,
+    total_count: overrides.total_count ?? items.length,
+    page: overrides.page ?? 1,
+    page_size: overrides.page_size ?? 20,
+  };
+}
+
 describe("DashboardPage", () => {
   beforeEach(() => {
     listMock.mockReset();
@@ -67,14 +83,16 @@ describe("DashboardPage", () => {
   });
 
   it("loads and renders the authenticated user's documents", async () => {
-    listMock.mockResolvedValue([
-      makeDocument(),
-      makeDocument({
-        id: "doc-2",
-        original_filename: "notes.txt",
-        mime_type: "text/plain",
-      }),
-    ]);
+    listMock.mockResolvedValue(
+      makeDocumentListResponse([
+        makeDocument(),
+        makeDocument({
+          id: "doc-2",
+          original_filename: "notes.txt",
+          mime_type: "text/plain",
+        }),
+      ]),
+    );
 
     renderDashboard();
 
@@ -90,11 +108,15 @@ describe("DashboardPage", () => {
       screen.getByText("notes.txt"),
     ).toBeInTheDocument();
 
-    expect(listMock).toHaveBeenCalledWith("test-token");
+    expect(listMock).toHaveBeenCalledWith("test-token", {
+      search: undefined,
+      page: 1,
+      page_size: 20,
+    });
   });
 
   it("provides a clear path from the dashboard to chat", async () => {
-    listMock.mockResolvedValue([]);
+    listMock.mockResolvedValue(makeDocumentListResponse());
 
     renderDashboard();
 
@@ -126,7 +148,9 @@ describe("DashboardPage", () => {
   });
 
   it("offers delete with inline confirmation and supports cancel", async () => {
-    listMock.mockResolvedValue([makeDocument()]);
+    listMock.mockResolvedValue(
+      makeDocumentListResponse([makeDocument()]),
+    );
 
     renderDashboard();
 
@@ -153,14 +177,16 @@ describe("DashboardPage", () => {
   });
 
   it("shows real document metadata in the document workspace", async () => {
-    listMock.mockResolvedValue([
-      makeDocument({
-        original_filename: "contract.docx",
-        mime_type:
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        processing_status: "indexed",
-      }),
-    ]);
+    listMock.mockResolvedValue(
+      makeDocumentListResponse([
+        makeDocument({
+          original_filename: "contract.docx",
+          mime_type:
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          processing_status: "indexed",
+        }),
+      ]),
+    );
 
     renderDashboard();
 
@@ -179,7 +205,13 @@ describe("DashboardPage", () => {
       mime_type: "text/plain",
     });
 
-    listMock.mockResolvedValue([first, second]);
+    listMock
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([first, second], { total_count: 2 }),
+      )
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([second], { total_count: 1 }),
+      );
 
     let resolveDelete: ((value: null) => void) | undefined;
 
@@ -209,6 +241,14 @@ describe("DashboardPage", () => {
       screen.getByText("notes.txt"),
     ).toBeInTheDocument();
 
+    listMock.mockResolvedValueOnce(
+      makeDocumentListResponse([], {
+        total_count: 0,
+        page: 1,
+        page_size: 20,
+      }),
+    );
+
     resolveDelete?.(null);
 
     await waitFor(() =>
@@ -224,7 +264,13 @@ describe("DashboardPage", () => {
       original_filename: "second.pdf",
     };
 
-    listMock.mockResolvedValue([first, second]);
+    listMock
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([first, second], { total_count: 2 }),
+      )
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([second], { total_count: 1 }),
+      );
     deleteDocumentMock.mockResolvedValue(null);
 
     renderDashboard();
@@ -257,7 +303,9 @@ describe("DashboardPage", () => {
   it("keeps the document visible and allows retry after delete failure", async () => {
     const document = makeDocument();
 
-    listMock.mockResolvedValue([document]);
+    listMock.mockResolvedValue(
+      makeDocumentListResponse([document]),
+    );
     deleteDocumentMock.mockRejectedValueOnce(new Error("Delete unavailable"));
 
     renderDashboard();
@@ -280,6 +328,13 @@ describe("DashboardPage", () => {
     expect(screen.getByText("report.pdf")).toBeInTheDocument();
 
     deleteDocumentMock.mockResolvedValueOnce(null);
+    listMock.mockResolvedValueOnce(
+      makeDocumentListResponse([], {
+        total_count: 0,
+        page: 1,
+        page_size: 20,
+      }),
+    );
 
     fireEvent.click(
       screen.getByRole("button", { name: "Delete" }),
@@ -296,7 +351,9 @@ describe("DashboardPage", () => {
   it("prevents duplicate delete requests while deletion is pending", async () => {
     const document = makeDocument();
 
-    listMock.mockResolvedValue([document]);
+    listMock.mockResolvedValue(
+      makeDocumentListResponse([document]),
+    );
 
     let resolveDelete: ((value: null) => void) | undefined;
 
@@ -320,6 +377,14 @@ describe("DashboardPage", () => {
 
     expect(deleteDocumentMock).toHaveBeenCalledTimes(1);
 
+    listMock.mockResolvedValueOnce(
+      makeDocumentListResponse([], {
+        total_count: 0,
+        page: 1,
+        page_size: 20,
+      }),
+    );
+
     resolveDelete?.(null);
 
     await waitFor(() =>
@@ -328,7 +393,7 @@ describe("DashboardPage", () => {
   });
 
   it("shows the post-upload Continue to Chat action", async () => {
-    listMock.mockResolvedValue([]);
+    listMock.mockResolvedValue(makeDocumentListResponse());
     uploadMock.mockResolvedValue(makeDocument());
 
     renderDashboard();
@@ -366,8 +431,369 @@ describe("DashboardPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("loads the initial page with pagination parameters and total count", async () => {
+    const document = makeDocument();
+
+    listMock.mockResolvedValueOnce(
+      makeDocumentListResponse([document], {
+        total_count: 21,
+        page: 1,
+        page_size: 20,
+      }),
+    );
+
+    renderDashboard();
+
+    expect(
+      await screen.findByText(document.original_filename),
+    ).toBeInTheDocument();
+
+    expect(listMock).toHaveBeenCalledWith("test-token", {
+      search: undefined,
+      page: 1,
+      page_size: 20,
+    });
+
+    expect(screen.getByText("21 documents")).toBeInTheDocument();
+    expect(screen.getByText("Page 1")).toBeInTheDocument();
+  });
+
+  it("does not fetch while typing and resets to page 1 on search submit", async () => {
+    const initial = makeDocument({
+      original_filename: "initial.pdf",
+    });
+    const filtered = makeDocument({
+      original_filename: "report.pdf",
+    });
+
+    listMock
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([initial], {
+          total_count: 21,
+          page: 1,
+          page_size: 20,
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([filtered], {
+          total_count: 1,
+          page: 1,
+          page_size: 20,
+        }),
+      );
+
+    renderDashboard();
+
+    await screen.findByText("initial.pdf");
+
+    const searchInput = screen.getByRole("searchbox", {
+      name: "Search documents",
+    });
+
+    fireEvent.change(searchInput, {
+      target: { value: "report" },
+    });
+
+    expect(listMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.submit(
+      screen.getByRole("form", {
+        name: "Search documents",
+      }),
+    );
+
+    await screen.findByText("report.pdf");
+
+    expect(listMock).toHaveBeenLastCalledWith("test-token", {
+      search: "report",
+      page: 1,
+      page_size: 20,
+    });
+  });
+
+  it("loads the next page", async () => {
+    const pageOne = makeDocument({
+      original_filename: "page-one.pdf",
+    });
+    const pageTwo = makeDocument({
+      original_filename: "page-two.pdf",
+    });
+
+    listMock
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([pageOne], {
+          total_count: 21,
+          page: 1,
+          page_size: 20,
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([pageTwo], {
+          total_count: 21,
+          page: 2,
+          page_size: 20,
+        }),
+      );
+
+    renderDashboard();
+
+    await screen.findByText("page-one.pdf");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Next page" }),
+    );
+
+    await screen.findByText("page-two.pdf");
+
+    expect(listMock).toHaveBeenLastCalledWith("test-token", {
+      search: undefined,
+      page: 2,
+      page_size: 20,
+    });
+  });
+
+  it("returns to the previous page", async () => {
+    const pageOne = makeDocument({
+      original_filename: "page-one.pdf",
+    });
+    const pageTwo = makeDocument({
+      original_filename: "page-two.pdf",
+    });
+
+    listMock
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([pageOne], {
+          total_count: 21,
+          page: 1,
+          page_size: 20,
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([pageTwo], {
+          total_count: 21,
+          page: 2,
+          page_size: 20,
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([pageOne], {
+          total_count: 21,
+          page: 1,
+          page_size: 20,
+        }),
+      );
+
+    renderDashboard();
+
+    await screen.findByText("page-one.pdf");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Next page" }),
+    );
+
+    await screen.findByText("page-two.pdf");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Previous page" }),
+    );
+
+    await screen.findByText("page-one.pdf");
+
+    expect(listMock).toHaveBeenLastCalledWith("test-token", {
+      search: undefined,
+      page: 1,
+      page_size: 20,
+    });
+  });
+
+  it("disables Next on the last page", async () => {
+    listMock.mockResolvedValueOnce(
+      makeDocumentListResponse([makeDocument()], {
+        total_count: 20,
+        page: 1,
+        page_size: 20,
+      }),
+    );
+
+    renderDashboard();
+
+    await screen.findByText("report.pdf");
+
+    expect(
+      screen.getByRole("button", { name: "Next page" }),
+    ).toBeDisabled();
+  });
+
+  it("refetches the server-backed page after delete", async () => {
+    const document = makeDocument();
+
+    listMock
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([document], {
+          total_count: 1,
+          page: 1,
+          page_size: 20,
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([], {
+          total_count: 0,
+          page: 1,
+          page_size: 20,
+        }),
+      );
+
+    deleteDocumentMock.mockResolvedValueOnce(null);
+
+    renderDashboard();
+
+    await screen.findByText(document.original_filename);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm delete" }),
+    );
+
+    await screen.findByText("No documents yet");
+
+    expect(listMock).toHaveBeenCalledTimes(2);
+    expect(listMock).toHaveBeenLastCalledWith("test-token", {
+      search: undefined,
+      page: 1,
+      page_size: 20,
+    });
+  });
+
+  it("moves back to page 1 after deleting the only item on page 2", async () => {
+    const pageOne = makeDocument({
+      original_filename: "page-one.pdf",
+    });
+    const pageTwo = makeDocument({
+      original_filename: "page-two.pdf",
+      id: "doc-2",
+    });
+
+    listMock
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([pageOne], {
+          total_count: 21,
+          page: 1,
+          page_size: 20,
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([pageTwo], {
+          total_count: 21,
+          page: 2,
+          page_size: 20,
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([pageOne], {
+          total_count: 20,
+          page: 1,
+          page_size: 20,
+        }),
+      );
+
+    deleteDocumentMock.mockResolvedValueOnce(null);
+
+    renderDashboard();
+
+    await screen.findByText("page-one.pdf");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Next page" }),
+    );
+
+    await screen.findByText("page-two.pdf");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Delete" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirm delete" }),
+    );
+
+    await screen.findByText("page-one.pdf");
+
+    expect(listMock).toHaveBeenLastCalledWith("test-token", {
+      search: undefined,
+      page: 1,
+      page_size: 20,
+    });
+  });
+
+  it("refreshes the server-backed page after upload instead of prepending locally", async () => {
+    const existing = makeDocument({
+      original_filename: "existing.pdf",
+    });
+    const uploaded = makeDocument({
+      id: "uploaded-id",
+      original_filename: "uploaded.pdf",
+    });
+    const refreshed = makeDocument({
+      id: "refreshed-id",
+      original_filename: "server-order.pdf",
+    });
+
+    listMock
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([existing], {
+          total_count: 1,
+          page: 1,
+          page_size: 20,
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeDocumentListResponse([refreshed, uploaded], {
+          total_count: 2,
+          page: 1,
+          page_size: 20,
+        }),
+      );
+
+    uploadMock.mockResolvedValueOnce(uploaded);
+
+    renderDashboard();
+
+    await screen.findByText("existing.pdf");
+
+    const input = screen.getByLabelText(
+      "Choose a PDF, DOCX, or TXT file",
+    );
+
+    const file = new File(
+      ["pdf"],
+      "uploaded.pdf",
+      { type: "application/pdf" },
+    );
+
+    fireEvent.change(input, {
+      target: { files: [file] },
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Upload document",
+      }),
+    );
+
+    await screen.findByText("server-order.pdf");
+
+    expect(listMock).toHaveBeenCalledTimes(2);
+    expect(listMock).toHaveBeenLastCalledWith("test-token", {
+      search: undefined,
+      page: 1,
+      page_size: 20,
+    });
+    expect(screen.getByText("uploaded.pdf")).toBeInTheDocument();
+  });
+
   it("logout remains functional", async () => {
-    listMock.mockResolvedValue([]);
+    listMock.mockResolvedValue(makeDocumentListResponse());
 
     renderDashboard();
 

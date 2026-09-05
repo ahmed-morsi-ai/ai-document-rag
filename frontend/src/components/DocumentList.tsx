@@ -2,6 +2,10 @@ import type { DocumentItem } from "../types/documents";
 
 interface DocumentListProps {
   documents: DocumentItem[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
+  search: string;
   isLoading: boolean;
   error: string;
   deleteTargetDocumentId: string | null;
@@ -10,6 +14,8 @@ interface DocumentListProps {
   onDeleteRequest: (documentId: string) => void;
   onDeleteCancel: () => void;
   onDeleteConfirm: (documentId: string) => void;
+  onPreviousPage: () => void;
+  onNextPage: () => void;
 }
 
 function formatDate(value: string) {
@@ -46,6 +52,10 @@ function DocumentIcon({ type }: { type: string }) {
 
 export function DocumentList({
   documents,
+  totalCount,
+  currentPage,
+  pageSize,
+  search,
   isLoading,
   error,
   deleteTargetDocumentId,
@@ -54,7 +64,11 @@ export function DocumentList({
   onDeleteRequest,
   onDeleteCancel,
   onDeleteConfirm,
+  onPreviousPage,
+  onNextPage,
 }: DocumentListProps) {
+  const isLastPage = currentPage * pageSize >= totalCount;
+
   return (
     <section
       className="document-workspace"
@@ -68,7 +82,7 @@ export function DocumentList({
 
         {!isLoading && !error ? (
           <span className="document-count">
-            {documents.length} {documents.length === 1 ? "document" : "documents"}
+            {totalCount} {totalCount === 1 ? "document" : "documents"}
           </span>
         ) : null}
       </div>
@@ -103,9 +117,13 @@ export function DocumentList({
         <div className="document-state document-state-empty">
           <div className="document-state-icon" aria-hidden="true">+</div>
           <div>
-            <strong>No documents yet</strong>
+            <strong>
+              {search ? "No matching documents" : "No documents yet"}
+            </strong>
             <p>
-              Upload a document to get started with your workspace.
+              {search
+                ? "Try a different filename."
+                : "Upload a document to get started with your workspace."}
             </p>
           </div>
         </div>
@@ -179,6 +197,28 @@ export function DocumentList({
             );
           })}
         </div>
+      ) : null}
+
+      {!isLoading && !error && documents.length > 0 ? (
+        <nav aria-label="Document pagination">
+          <button
+            type="button"
+            onClick={onPreviousPage}
+            disabled={currentPage === 1}
+            aria-label="Previous page"
+          >
+            Previous
+          </button>
+          <span aria-current="page">Page {currentPage}</span>
+          <button
+            type="button"
+            onClick={onNextPage}
+            disabled={isLastPage}
+            aria-label="Next page"
+          >
+            Next
+          </button>
+        </nav>
       ) : null}
     </section>
   );

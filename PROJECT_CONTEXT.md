@@ -177,5 +177,26 @@
 - Reset/troubleshooting guidance.
 - Verification: Compose PostgreSQL/backend runtime verified; Docker backend reached host Ollama through `host.docker.internal`; `gemma4:latest` was available; backend regression passed 301/301 tests.
 
+## Task 40 — CLOSED / VERIFIED
+
+- Batch 3A — Backend Conversation Search & Pagination: CLOSED.
+- Added authenticated conversation search by title with server-side pagination.
+- Conversation responses expose `conversations`, `total_count`, `page`, and `page_size`.
+- Ownership filtering, deterministic ordering, total-count calculation, and page boundaries are preserved.
+- Backend regression suite passed after Batch 3A changes.
+- Batch 3A commit: `c8446a8`.
+
+- Batch 3B — Frontend Conversation Search & Pagination: CLOSED.
+- Added conversation search submission with page reset to page 1.
+- Added frontend conversation pagination controls with previous/next boundary handling.
+- Preserved conversation deletion behavior across pagination boundaries.
+- Preserved new-conversation synchronization and updated the conversation total count after synchronization.
+- Updated the conversation API client and frontend response types for search/pagination parameters and paginated responses.
+- Added frontend API and ChatPage coverage for search, pagination, and search pagination reset.
+- Frontend regression suite: 76 tests passing.
+- Frontend production build: verified successfully.
+- Batch 3B commit: `3b9adf9`.
+- Both Batch 3A and Batch 3B were pushed to `origin/main`.
+
 ## Next Task
-- Task 40.
+- Task 41.

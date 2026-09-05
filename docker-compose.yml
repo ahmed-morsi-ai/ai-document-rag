@@ -32,8 +32,11 @@ services:
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
       - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
     volumes:
       - ./backend:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy

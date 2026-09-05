@@ -411,7 +411,7 @@ alembic upgrade head
 cd ..
 ```
 
-3. Ollama is an external local dependency. Make sure it is running and that the model configured by `OLLAMA_MODEL` is available.
+3. Ollama is an external local dependency. Make sure it is running and that the model configured by `OLLAMA_MODEL` is available. When the backend runs on the host, use `OLLAMA_BASE_URL=http://localhost:11434`; when the backend runs through Docker Compose, it uses `OLLAMA_BASE_URL=http://host.docker.internal:11434`. Ollama remains external to Compose.
 
 4. Start the backend on the host:
 

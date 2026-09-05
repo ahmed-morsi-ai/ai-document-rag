@@ -382,7 +382,67 @@ npm install
 npm run dev
 ```
 
-Run the backend using the repository's FastAPI configuration and the environment in `.env`.
+### Local Developer Startup
+
+For a fresh clone, use this workflow:
+
+1. Create the local environment file and adjust values for the machine:
+
+```bash
+cp .env.example .env
+```
+
+Do not commit real secrets or credentials.
+
+2. PostgreSQL may be provided by the repository Compose setup:
+
+```bash
+docker compose up -d postgres
+```
+
+When the backend runs on the host and PostgreSQL runs through Docker Compose, `DATABASE_URL` must use the host-mapped PostgreSQL port, and that port must match `POSTGRES_PORT`. When the backend runs as a Compose service, use the PostgreSQL Compose service name as the hostname and container port `5432`, not the host-mapped port. Keep these values configurable rather than hardcoding a specific host port in the documentation.
+
+From the repository root, activate the backend virtual environment, enter the backend directory, and run the existing Alembic migrations:
+
+```bash
+cd backend
+source .venv/bin/activate
+alembic upgrade head
+cd ..
+```
+
+3. Ollama is an external local dependency. Make sure it is running and that the model configured by `OLLAMA_MODEL` is available.
+
+4. Start the backend on the host:
+
+```bash
+cd backend
+source .venv/bin/activate
+uvicorn app.main:app --reload
+```
+
+5. In another terminal, start the frontend with Vite:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend uses `VITE_API_BASE_URL` to determine the backend API URL. Vite may use another port when its default port is already occupied.
+
+The current `docker-compose.yml` provides PostgreSQL and a containerized backend only. It does not provide the frontend or Ollama, so Compose is not a self-contained full-application development environment.
+
+### Initial Verification
+
+Check the backend:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Then open the URL reported by Vite and verify the normal application flow: register/login, upload a document, verify indexing/retrieval, use RAG chat and sources, verify conversation history, and verify document deletion.
+
 
 ## Environment / Configuration
 

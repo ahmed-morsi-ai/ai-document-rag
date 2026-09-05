@@ -1,7 +1,13 @@
+import type { FormEvent } from "react";
 import type { ConversationItem } from "../types/conversations";
 
 interface ConversationListProps {
   conversations: ConversationItem[];
+  totalCount: number;
+  currentPage: number;
+  pageSize: number;
+  search: string;
+  searchInput: string;
   activeConversationId: string | null;
   isLoading: boolean;
   error: string;
@@ -13,10 +19,19 @@ interface ConversationListProps {
   onDeleteRequest: (conversationId: string) => void;
   onDeleteCancel: () => void;
   onDeleteConfirm: (conversationId: string) => void;
+  onSearchInputChange: (value: string) => void;
+  onSearchSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onPreviousPage: () => void;
+  onNextPage: () => void;
 }
 
 export function ConversationList({
   conversations,
+  totalCount,
+  currentPage,
+  pageSize,
+  search,
+  searchInput,
   activeConversationId,
   isLoading,
   error,
@@ -28,6 +43,10 @@ export function ConversationList({
   onDeleteRequest,
   onDeleteCancel,
   onDeleteConfirm,
+  onSearchInputChange,
+  onSearchSubmit,
+  onPreviousPage,
+  onNextPage,
 }: ConversationListProps) {
   return (
     <aside
@@ -49,6 +68,27 @@ export function ConversationList({
           New chat
         </button>
       </div>
+
+      <form
+        className="chat-conversation-search"
+        onSubmit={onSearchSubmit}
+        aria-label="Search conversations"
+      >
+        <label htmlFor="conversation-search">
+          Search conversations
+        </label>
+        <input
+          id="conversation-search"
+          name="search"
+          type="search"
+          value={searchInput}
+          onChange={(event) =>
+            onSearchInputChange(event.target.value)
+          }
+          placeholder="Search by title"
+        />
+        <button type="submit">Search</button>
+      </form>
 
       <div className="chat-sidebar-body">
         {isLoading ? (
@@ -72,20 +112,31 @@ export function ConversationList({
 
         {!isLoading && !error && conversations.length === 0 ? (
           <div className="chat-sidebar-empty">
-            <strong>No conversations yet.</strong>
-            <span>Start a new chat to begin.</span>
-            <button
-              type="button"
-              className="secondary"
-              onClick={onNewConversation}
-            >
-              Start a new chat
-            </button>
+            <strong>
+              {search
+                ? "No matching conversations"
+                : "No conversations yet."}
+            </strong>
+            <span>
+              {search
+                ? "Try a different title."
+                : "Start a new chat to begin."}
+            </span>
+            {!search ? (
+              <button
+                type="button"
+                className="secondary"
+                onClick={onNewConversation}
+              >
+                Start a new chat
+              </button>
+            ) : null}
           </div>
         ) : null}
 
         {!isLoading && !error && conversations.length > 0 ? (
-          <nav aria-label="Conversations">
+          <>
+            <nav aria-label="Conversations">
             <ul className="chat-conversation-list">
               {conversations.map((conversation) => {
                 const isActive =
@@ -170,7 +221,33 @@ export function ConversationList({
                 );
               })}
             </ul>
-          </nav>
+            </nav>
+
+            <nav
+              className="chat-conversation-pagination"
+              aria-label="Conversation pagination"
+            >
+              <button
+                type="button"
+                onClick={onPreviousPage}
+                disabled={currentPage === 1}
+                aria-label="Previous conversation page"
+              >
+                Previous
+              </button>
+              <span aria-current="page">
+                Page {currentPage}
+              </span>
+              <button
+                type="button"
+                onClick={onNextPage}
+                disabled={currentPage * pageSize >= totalCount}
+                aria-label="Next conversation page"
+              >
+                Next
+              </button>
+            </nav>
+          </>
         ) : null}
       </div>
 

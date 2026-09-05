@@ -5,8 +5,17 @@ export interface ConversationItem {
   updated_at: string;
 }
 
+export interface ConversationListParams {
+  search?: string;
+  page?: number;
+  page_size?: number;
+}
+
 export interface ConversationListResponse {
   conversations: ConversationItem[];
+  total_count: number;
+  page: number;
+  page_size: number;
 }
 
 export interface ConversationMessage {

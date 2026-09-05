@@ -266,6 +266,249 @@ describe("ChatPage", () => {
     expect(getConversationMessagesMock).not.toHaveBeenCalled();
   });
 
+  it("searches conversations only after submitting the search form", async () => {
+    getConversationsMock
+      .mockResolvedValueOnce({
+        conversations: [
+          {
+            ...conversation,
+            title: "Initial conversation",
+          },
+        ],
+        total_count: 1,
+        page: 1,
+        page_size: 20,
+      })
+      .mockResolvedValueOnce({
+        conversations: [
+          {
+            ...conversation,
+            title: "Quarterly report",
+          },
+        ],
+        total_count: 1,
+        page: 1,
+        page_size: 20,
+      });
+
+    renderPage();
+
+    await waitFor(() =>
+      expect(getConversationsMock).toHaveBeenCalledWith(
+        "test-token",
+        {
+          search: undefined,
+          page: 1,
+          page_size: 20,
+        },
+      ),
+    );
+
+    const searchInput = screen.getByRole("searchbox", {
+      name: "Search conversations",
+    });
+
+    fireEvent.change(searchInput, {
+      target: { value: "report" },
+    });
+
+    expect(getConversationsMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.submit(
+      screen.getByRole("form", {
+        name: "Search conversations",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(getConversationsMock).toHaveBeenCalledWith(
+        "test-token",
+        {
+          search: "report",
+          page: 1,
+          page_size: 20,
+        },
+      ),
+    );
+  });
+
+  it("paginates conversations and requests the next page", async () => {
+    const firstConversation = {
+      ...conversation,
+      title: "First conversation",
+    };
+
+    const secondConversation = {
+      ...conversation,
+      id: "55555555-5555-4555-8555-555555555555",
+      title: "Second page conversation",
+    };
+
+    getConversationsMock
+      .mockResolvedValueOnce({
+        conversations: [firstConversation],
+        total_count: 21,
+        page: 1,
+        page_size: 20,
+      })
+      .mockResolvedValueOnce({
+        conversations: [secondConversation],
+        total_count: 21,
+        page: 2,
+        page_size: 20,
+      });
+
+    renderPage();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", {
+          name: firstConversation.title,
+        }),
+      ).toBeInTheDocument(),
+    );
+
+    expect(
+      screen.getByRole("button", {
+        name: "Previous conversation page",
+      }),
+    ).toBeDisabled();
+
+    const nextPageButton = screen.getByRole("button", {
+      name: "Next conversation page",
+    });
+
+    expect(nextPageButton).not.toBeDisabled();
+
+    fireEvent.click(nextPageButton);
+
+    await waitFor(() =>
+      expect(getConversationsMock).toHaveBeenCalledWith(
+        "test-token",
+        {
+          search: undefined,
+          page: 2,
+          page_size: 20,
+        },
+      ),
+    );
+
+    expect(
+      await screen.findByRole("button", {
+        name: secondConversation.title,
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", {
+        name: "Previous conversation page",
+      }),
+    ).not.toBeDisabled();
+  });
+
+  it("resets conversation pagination to page 1 when a new search is submitted", async () => {
+    const firstPageConversation = {
+      ...conversation,
+      title: "Initial conversation",
+    };
+
+    const secondPageConversation = {
+      ...conversation,
+      id: "66666666-6666-4666-8666-666666666666",
+      title: "Second page conversation",
+    };
+
+    const searchedConversation = {
+      ...conversation,
+      id: "77777777-7777-4777-8777-777777777777",
+      title: "Report conversation",
+    };
+
+    getConversationsMock
+      .mockResolvedValueOnce({
+        conversations: [firstPageConversation],
+        total_count: 21,
+        page: 1,
+        page_size: 20,
+      })
+      .mockResolvedValueOnce({
+        conversations: [secondPageConversation],
+        total_count: 21,
+        page: 2,
+        page_size: 20,
+      })
+      .mockResolvedValueOnce({
+        conversations: [searchedConversation],
+        total_count: 1,
+        page: 1,
+        page_size: 20,
+      });
+
+    renderPage();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", {
+          name: firstPageConversation.title,
+        }),
+      ).toBeInTheDocument(),
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Next conversation page",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(getConversationsMock).toHaveBeenLastCalledWith(
+        "test-token",
+        {
+          search: undefined,
+          page: 2,
+          page_size: 20,
+        },
+      ),
+    );
+
+    const searchInput = screen.getByRole("searchbox", {
+      name: "Search conversations",
+    });
+
+    fireEvent.change(searchInput, {
+      target: { value: "report" },
+    });
+
+    fireEvent.submit(
+      screen.getByRole("form", {
+        name: "Search conversations",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(getConversationsMock).toHaveBeenLastCalledWith(
+        "test-token",
+        {
+          search: "report",
+          page: 1,
+          page_size: 20,
+        },
+      ),
+    );
+
+    expect(
+      await screen.findByRole("button", {
+        name: searchedConversation.title,
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", {
+        name: "Previous conversation page",
+      }),
+    ).toBeDisabled();
+  });
+
   it("renders conversation-list errors", async () => {
     getConversationsMock.mockRejectedValueOnce(
       new Error("Conversation service unavailable"),
@@ -419,9 +662,19 @@ describe("ChatPage", () => {
       updated_at: "2026-01-03T00:00:00Z",
     };
 
-    getConversationsMock.mockResolvedValueOnce({
-      conversations: [conversation, conversationB],
-    });
+    getConversationsMock
+      .mockResolvedValueOnce({
+        conversations: [conversation, conversationB],
+        total_count: 2,
+        page: 1,
+        page_size: 20,
+      })
+      .mockResolvedValueOnce({
+        conversations: [conversation],
+        total_count: 1,
+        page: 1,
+        page_size: 20,
+      });
 
     renderPage();
 
@@ -488,9 +741,19 @@ describe("ChatPage", () => {
       updated_at: "2026-01-03T00:00:00Z",
     };
 
-    getConversationsMock.mockResolvedValueOnce({
-      conversations: [conversation, conversationB],
-    });
+    getConversationsMock
+      .mockResolvedValueOnce({
+        conversations: [conversation, conversationB],
+        total_count: 2,
+        page: 1,
+        page_size: 20,
+      })
+      .mockResolvedValueOnce({
+        conversations: [conversation],
+        total_count: 1,
+        page: 1,
+        page_size: 20,
+      });
 
     getConversationMessagesMock.mockResolvedValueOnce({
       conversation,

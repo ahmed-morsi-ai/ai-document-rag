@@ -1,4 +1,5 @@
 import {
+  type FormEvent,
   useCallback,
   useEffect,
   useRef,
@@ -22,6 +23,9 @@ import type {
   ConversationItem,
   ConversationMessage,
 } from "../types/conversations";
+
+const CONVERSATION_PAGE_SIZE = 20;
+const CONVERSATION_SYNC_PAGE_SIZE = 100;
 
 type PendingSynchronization =
   | {
@@ -65,6 +69,14 @@ export function ChatPage() {
   const [conversations, setConversations] = useState<
     ConversationItem[]
   >([]);
+  const [totalConversationCount, setTotalConversationCount] =
+    useState(0);
+  const [currentConversationPage, setCurrentConversationPage] =
+    useState(1);
+  const conversationPageSize = CONVERSATION_PAGE_SIZE;
+  const [conversationSearch, setConversationSearch] = useState("");
+  const [conversationSearchInput, setConversationSearchInput] =
+    useState("");
   const [activeConversationId, setActiveConversationId] =
     useState<string | null>(null);
   const [messages, setMessages] = useState<
@@ -110,8 +122,13 @@ export function ChatPage() {
 
     try {
       const response =
-        await conversationApi.getConversations(token);
+        await conversationApi.getConversations(token, {
+          search: conversationSearch || undefined,
+          page: currentConversationPage,
+          page_size: conversationPageSize,
+        });
       setConversations(response.conversations);
+      setTotalConversationCount(response.total_count);
     } catch (err) {
       if (
         err instanceof ApiError &&
@@ -129,11 +146,38 @@ export function ChatPage() {
     } finally {
       setIsConversationsLoading(false);
     }
-  }, [handleAuthFailure, token]);
+  }, [
+    conversationPageSize,
+    conversationSearch,
+    currentConversationPage,
+    handleAuthFailure,
+    token,
+  ]);
 
   useEffect(() => {
     void loadConversations();
   }, [loadConversations]);
+
+  function handleConversationSearchSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+    setCurrentConversationPage(1);
+    setConversationSearch(conversationSearchInput.trim());
+  }
+
+  function handlePreviousConversationPage() {
+    setCurrentConversationPage((page) => Math.max(1, page - 1));
+  }
+
+  function handleNextConversationPage() {
+    if (
+      currentConversationPage * conversationPageSize <
+      totalConversationCount
+    ) {
+      setCurrentConversationPage((page) => page + 1);
+    }
+  }
 
   useEffect(() => {
     if (!token) {
@@ -353,11 +397,23 @@ export function ChatPage() {
         conversationId,
       );
 
-      setConversations((current) =>
-        current.filter(
-          (conversation) => conversation.id !== conversationId,
-        ),
+      const remainingCount = Math.max(
+        totalConversationCount - 1,
+        0,
       );
+      const lastValidPage = Math.max(
+        1,
+        Math.ceil(remainingCount / conversationPageSize),
+      );
+
+      setTotalConversationCount(remainingCount);
+      setDeleteTargetConversationId(null);
+
+      if (currentConversationPage > lastValidPage) {
+        setCurrentConversationPage(lastValidPage);
+      } else {
+        await loadConversations();
+      }
 
       setDeletingConversationId(null);
 
@@ -453,13 +509,15 @@ export function ChatPage() {
       const refreshed =
         await conversationApi.getConversations(
           token as string,
+          {
+            page: 1,
+            page_size: CONVERSATION_SYNC_PAGE_SIZE,
+          },
         );
 
       if (operationId !== chatOperationRef.current) {
         return;
       }
-
-      setConversations(refreshed.conversations);
 
       const newConversations =
         refreshed.conversations.filter(
@@ -467,11 +525,28 @@ export function ChatPage() {
             !existingConversationIds.has(conversation.id),
         );
 
+      setConversations((current) =>
+        newConversations.length > 0
+          ? [
+              ...newConversations,
+              ...current.filter(
+                (conversation) =>
+                  !newConversations.some(
+                    (newConversation) =>
+                      newConversation.id === conversation.id,
+                  ),
+              ),
+            ].slice(0, conversationPageSize)
+          : current,
+      );
+
       if (newConversations.length !== 1) {
         throw new Error(
           "Unable to synchronize the new conversation.",
         );
       }
+
+      setTotalConversationCount(refreshed.total_count);
 
       const newConversationId = newConversations[0].id;
 
@@ -638,6 +713,11 @@ export function ChatPage() {
         <div className="chat-workspace-main">
         <ConversationList
           conversations={conversations}
+          totalCount={totalConversationCount}
+          currentPage={currentConversationPage}
+          pageSize={conversationPageSize}
+          search={conversationSearch}
+          searchInput={conversationSearchInput}
           activeConversationId={activeConversationId}
           isLoading={isConversationsLoading}
           error={conversationError}
@@ -649,6 +729,10 @@ export function ChatPage() {
           onDeleteRequest={handleDeleteRequest}
           onDeleteCancel={handleDeleteCancel}
           onDeleteConfirm={handleDeleteConfirm}
+          onSearchInputChange={setConversationSearchInput}
+          onSearchSubmit={handleConversationSearchSubmit}
+          onPreviousPage={handlePreviousConversationPage}
+          onNextPage={handleNextConversationPage}
         />
 
         <section className="chat-main" aria-label="Chat conversation">

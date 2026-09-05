@@ -2,6 +2,7 @@ import type {
   ChatRequest,
   ChatResponse,
   ConversationHistoryResponse,
+  ConversationListParams,
   ConversationListResponse,
 } from "../types/conversations";
 
@@ -101,8 +102,30 @@ export const chatApi = {
 };
 
 export const conversationApi = {
-  getConversations(token: string) {
-    return request<ConversationListResponse>("/conversations", {}, token);
+  getConversations(
+    token: string,
+    params: ConversationListParams = {},
+  ) {
+    const query = new URLSearchParams();
+
+    if (params.search !== undefined) {
+      query.set("search", params.search);
+    }
+
+    if (params.page !== undefined) {
+      query.set("page", String(params.page));
+    }
+
+    if (params.page_size !== undefined) {
+      query.set("page_size", String(params.page_size));
+    }
+
+    const queryString = query.toString();
+    const path = queryString
+      ? `/conversations?${queryString}`
+      : "/conversations";
+
+    return request<ConversationListResponse>(path, {}, token);
   },
 
   getConversationMessages(

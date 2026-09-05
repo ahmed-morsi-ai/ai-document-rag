@@ -36,7 +36,12 @@ describe("frontend authentication foundation", () => {
     localStorage.clear();
     meMock.mockReset();
     listDocumentsMock.mockReset();
-    listDocumentsMock.mockResolvedValue([]);
+    listDocumentsMock.mockResolvedValue({
+      items: [],
+      total_count: 0,
+      page: 1,
+      page_size: 20,
+    });
   });
 
   it("redirects the root route to login", async () => {
@@ -105,7 +110,12 @@ describe("frontend authentication foundation", () => {
       is_active: true,
     });
 
-    listDocumentsMock.mockResolvedValue([]);
+    listDocumentsMock.mockResolvedValue({
+      items: [],
+      total_count: 0,
+      page: 1,
+      page_size: 20,
+    });
 
     render(
       <MemoryRouter initialEntries={["/app"]}>
@@ -152,7 +162,12 @@ describe("frontend authentication foundation", () => {
       is_active: true,
     });
 
-    listDocumentsMock.mockResolvedValue([]);
+    listDocumentsMock.mockResolvedValue({
+      items: [],
+      total_count: 0,
+      page: 1,
+      page_size: 20,
+    });
 
     render(
       <MemoryRouter initialEntries={["/app/chat"]}>
@@ -180,7 +195,12 @@ describe("frontend authentication foundation", () => {
       is_active: true,
     });
 
-    listDocumentsMock.mockResolvedValue([]);
+    listDocumentsMock.mockResolvedValue({
+      items: [],
+      total_count: 0,
+      page: 1,
+      page_size: 20,
+    });
 
     render(
       <MemoryRouter initialEntries={["/app"]}>
@@ -208,7 +228,12 @@ describe("frontend authentication foundation", () => {
       is_active: true,
     });
 
-    listDocumentsMock.mockResolvedValue([]);
+    listDocumentsMock.mockResolvedValue({
+      items: [],
+      total_count: 0,
+      page: 1,
+      page_size: 20,
+    });
 
     render(
       <MemoryRouter initialEntries={["/app"]}>
@@ -238,7 +263,12 @@ describe("frontend authentication foundation", () => {
       is_active: true,
     });
 
-    listDocumentsMock.mockResolvedValue([]);
+    listDocumentsMock.mockResolvedValue({
+      items: [],
+      total_count: 0,
+      page: 1,
+      page_size: 20,
+    });
 
     render(
       <MemoryRouter initialEntries={["/app"]}>
@@ -314,7 +344,12 @@ describe("frontend authentication foundation", () => {
       is_active: true,
     });
 
-    listDocumentsMock.mockResolvedValue([]);
+    listDocumentsMock.mockResolvedValue({
+      items: [],
+      total_count: 0,
+      page: 1,
+      page_size: 20,
+    });
 
     render(
       <MemoryRouter initialEntries={["/app"]}>

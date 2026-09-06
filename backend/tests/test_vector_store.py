@@ -199,7 +199,7 @@ class VectorStoreTests(unittest.TestCase):
                 float,
             )
 
-    def test_query_filters_results_by_owner_id(self):
+    def test_query_filters_results_bidirectionally_with_identical_content(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ChromaVectorStore(
                 persist_directory=Path(temp_dir),
@@ -210,7 +210,66 @@ class VectorStoreTests(unittest.TestCase):
                 ids=["owner-a", "owner-b"],
                 embeddings=[
                     [1.0, 0.0],
-                    [0.99, 0.0],
+                    [1.0, 0.0],
+                ],
+                texts=[
+                    "shared policy text",
+                    "shared policy text",
+                ],
+                metadatas=[
+                    {
+                        "owner_id": "user-a",
+                        "document_id": "document-a",
+                        "chunk_index": "0",
+                    },
+                    {
+                        "owner_id": "user-b",
+                        "document_id": "document-b",
+                        "chunk_index": "0",
+                    },
+                ],
+            )
+
+            results_a = store.query(
+                embedding=[1.0, 0.0],
+                top_k=1,
+                owner_id="user-a",
+            )
+            results_b = store.query(
+                embedding=[1.0, 0.0],
+                top_k=1,
+                owner_id="user-b",
+            )
+
+            self.assertEqual(
+                [result.id for result in results_a],
+                ["owner-a"],
+            )
+            self.assertEqual(
+                [result.id for result in results_b],
+                ["owner-b"],
+            )
+            self.assertEqual(
+                results_a[0].metadata["owner_id"],
+                "user-a",
+            )
+            self.assertEqual(
+                results_b[0].metadata["owner_id"],
+                "user-b",
+            )
+
+    def test_query_filters_before_top_k(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ChromaVectorStore(
+                persist_directory=Path(temp_dir),
+                collection_name="test_collection",
+            )
+
+            store.add(
+                ids=["owner-a", "owner-b"],
+                embeddings=[
+                    [0.8, 0.6],
+                    [1.0, 0.0],
                 ],
                 texts=[
                     "owner a text",
@@ -232,7 +291,52 @@ class VectorStoreTests(unittest.TestCase):
 
             results = store.query(
                 embedding=[1.0, 0.0],
-                top_k=2,
+                top_k=1,
+                owner_id="user-a",
+            )
+
+            self.assertEqual(
+                [result.id for result in results],
+                ["owner-a"],
+            )
+            self.assertEqual(
+                results[0].metadata["owner_id"],
+                "user-a",
+            )
+
+    def test_query_excludes_ownerless_legacy_vectors(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ChromaVectorStore(
+                persist_directory=Path(temp_dir),
+                collection_name="test_collection",
+            )
+
+            store.add(
+                ids=["legacy", "owner-a"],
+                embeddings=[
+                    [1.0, 0.0],
+                    [0.9, 0.1],
+                ],
+                texts=[
+                    "legacy ownerless text",
+                    "owner a text",
+                ],
+                metadatas=[
+                    {
+                        "document_id": "legacy-document",
+                        "chunk_index": "0",
+                    },
+                    {
+                        "owner_id": "user-a",
+                        "document_id": "document-a",
+                        "chunk_index": "0",
+                    },
+                ],
+            )
+
+            results = store.query(
+                embedding=[1.0, 0.0],
+                top_k=1,
                 owner_id="user-a",
             )
 

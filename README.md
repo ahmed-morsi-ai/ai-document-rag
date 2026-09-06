@@ -601,6 +601,12 @@ A database reset is **destructive**: removing that volume destroys the PostgreSQ
 
 The Chroma vector store is filesystem-backed. The repository currently contains both `./vector_store` and `./backend/vector_store`, so the relevant path depends on the runtime context in which the application is running.
 
+Authenticated retrieval is always owner-scoped. Vectors without `owner_id` are not eligible for authenticated retrieval and must never be exposed through an unrestricted fallback.
+
+Developers with Chroma data created before the owner-aware retrieval change may have stale ownerless vectors. Those vectors are fail-closed by the owner filter, so they are not returned to authenticated users, but they are not retrievable until they are rebuilt with ownership metadata.
+
+The repository does not automatically migrate ownerless local vectors. Do not invent ownership from vector content, filenames, or document IDs. If a legacy vector can be safely rebuilt from a persisted application document, reindex that document through the normal owner-aware indexing path. If the corresponding persisted document cannot be resolved safely, treat the vector as stale local data and reset only the confirmed active local vector-store directory, then re-upload or reindex the source documents. Never add an unrestricted retrieval fallback to make ownerless vectors retrievable.
+
 A vector-store reset is **destructive**: removing the relevant persisted vector-store directory removes indexed vectors and requires the affected documents to be indexed again. Do not use an ambiguous `rm -rf vector_store` command without first confirming which runtime path is active.
 
 ### Document-storage Reset

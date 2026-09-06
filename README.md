@@ -6,6 +6,14 @@ The project combines a FastAPI backend, PostgreSQL persistence, persistent vecto
 
 ## Current Verified Feature Set
 
+
+The current verified product includes:
+
+**Backend:** authentication, document lifecycle, parsing, chunking, embeddings, owner-aware indexing, owner-scoped retrieval, RAG orchestration, Ollama integration, chat persistence, conversations, evaluation, reliability hardening, and security/tenant-isolation verification.
+
+**Frontend:** authenticated application shell, dashboard, upload, document search and pagination, document deletion, conversation search and pagination, chat, source/citation display, themes, responsive behavior, and accessibility-oriented UI behavior.
+
+
 The currently implemented and verified product includes:
 
 - User registration and login with JWT authentication.
@@ -217,6 +225,12 @@ PYTHONPATH=backend python -m app.evaluation.runner --mode grounding --dataset ba
 
 The grounding evaluator normalizes whitespace, applies case-folding, and deterministically checks substring presence of expected evidence phrases against supplied source texts. It operates without external models, LLM judges, vector stores, or network calls. It measures deterministic evidence coverage for the controlled dataset and does not claim unconstrained semantic factuality or hallucination detection.
 
+## Vector Ownership & Retrieval Isolation
+
+Authenticated retrieval is owner-scoped end to end. Indexed chunks carry the owning document/user identity, retrieval receives the authenticated owner identity, and the Chroma query applies the owner constraint at the vector-store boundary. There is no unrestricted authenticated retrieval fallback.
+
+Ownerless vectors from older local vector-store data are not eligible for authenticated retrieval. The repository does not infer ownership for such vectors. When legacy local vectors need to be recovered, developers must explicitly rebuild/reindex the corresponding persisted documents or deliberately reset/re-upload according to the documented safe reset procedure.
+
 ## Authentication
 
 Authentication is JWT-based.
@@ -285,6 +299,8 @@ Conversation deletion verifies ownership and removes the conversation together w
 ## Current Tech Stack
 
 ### Backend
+**Migration contract:** Docker backend startup currently launches Uvicorn directly and does not demonstrably run `alembic upgrade head` automatically. Until Task 42 Batch 2 verifies the intended startup procedure, local setup should treat database migrations as an explicit developer step. This documentation does not claim automatic migrations or that the migration system is broken.
+
 
 - Python
 - FastAPI
@@ -546,6 +562,11 @@ The backend suite covers authentication, chat, conversations, persistence, docum
 
 ## Current Limitations
 
+### Project Scope vs. Future Production Evolution
+
+The repository is a locally developed full-stack RAG application. The following are future production-evolution areas rather than missing core product features: production deployment configuration, production secret management, distributed/background processing, production observability, and large-scale operational infrastructure. Local Ollama usage and synchronous AI processing are also part of the current architecture.
+
+
 The current repository is a locally developed full-stack RAG application and is not documented as a production deployment.
 
 Current limitations include:
@@ -554,8 +575,8 @@ Current limitations include:
 - Production secret management is outside the repository.
 - The application depends on local infrastructure such as PostgreSQL, vector storage, and Ollama.
 - OCR and scanned-document processing are not part of the current verified feature set.
-- Bulk document deletion, document search, and document pagination are not implemented.
-- Conversation search and pagination are not implemented.
+- Bulk document deletion is not currently implemented. Document search and document pagination are implemented.
+- Conversation search and conversation pagination are implemented.
 - Production observability, distributed background processing, and large-scale operational infrastructure are outside the current scope.
 
 ## Repository Structure

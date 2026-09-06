@@ -162,10 +162,9 @@
   - Batch 3 — Document lifecycle consistency: CLOSED.
   - Batch 4 — Transactional chat exchange: CLOSED.
   - Batch 5 — Endpoint reliability test hardening: CLOSED.
-- Full backend regression suite: 307 tests passing.
 - Task 38 — End-to-End Product Verification: CLOSED / VERIFIED.
 - Task 38 verified the live backend/frontend product journey across authentication, document upload, document indexing, retrieval, RAG with Ollama, source evidence, conversation history and persistence, document deletion, and failure-path behavior.
-- Task 38 verification results: backend regression 307 tests passing; frontend regression 62 tests passing.
+- Task 38 historical verification: backend and frontend regression suites passed for that task's verified baseline.
 - Task 38 required a safe exception-logging adjustment in `backend/app/main.py` and CPU-only Torch runtime selection in `backend/requirements.txt` for the verified local E2E environment because CUDA was unavailable on the current machine. This was a local/runtime verification detail, not a project-wide GPU compatibility claim.
 ## Task 39 — CLOSED / VERIFIED
 
@@ -197,6 +196,37 @@
 - Frontend production build: verified successfully.
 - Batch 3B commit: `3b9adf9`.
 - Both Batch 3A and Batch 3B were pushed to `origin/main`.
+
+## Task 41 — RAG Tenant Isolation & Security Verification
+
+**Status:** CLOSED / VERIFIED LOCALLY
+
+Task 41 completed the owner-aware vector isolation work and its verification.
+
+Verified state:
+- owner-aware vector indexing
+- owner-scoped retrieval
+- Chroma owner filtering
+- reciprocal/identical-content security coverage
+- fail-closed handling of ownerless legacy vectors
+- documented legacy-vector rebuild/reindex/reset lifecycle guidance
+
+Latest Task 41 commit:
+`215b5d6 test(security): close rag tenant isolation verification`
+
+Task 41 is verified locally and has not been pushed.
+
+## Current Verified Repository State
+
+- Backend test inventory: 29 test files and 338 test methods/functions currently present in `backend/tests/`.
+- Frontend test inventory: 4 test files currently present under `frontend/src/`.
+- Task 40 is CLOSED / VERIFIED LOCALLY, including document search/pagination and conversation search/pagination with corresponding frontend/backend verification.
+- Task 41 is CLOSED / VERIFIED LOCALLY, including owner-aware vector indexing, owner-scoped retrieval, Chroma owner filtering, reciprocal/identical-content isolation coverage, fail-closed ownerless-vector behavior, and legacy-vector lifecycle guidance.
+- Project completion is now in Task 42 release-readiness/documentation reconciliation; this does not define or invent a historical Task 42 scope.
+
+## Current Runtime Contract
+
+The Docker backend startup command currently launches Uvicorn directly. The repository does not currently demonstrate an automatic `alembic upgrade head` step during container startup. Local setup should therefore treat migration execution as an explicit developer/runtime contract until Task 42 Batch 2 verifies the intended startup procedure. This documentation does not classify migrations as broken and does not claim automatic migrations.
 
 ## Next Task
 - Task 41.

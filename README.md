@@ -299,7 +299,7 @@ Conversation deletion verifies ownership and removes the conversation together w
 ## Current Tech Stack
 
 ### Backend
-**Migration contract:** Docker backend startup currently launches Uvicorn directly and does not demonstrably run `alembic upgrade head` automatically. Until Task 42 Batch 2 verifies the intended startup procedure, local setup should treat database migrations as an explicit developer step. This documentation does not claim automatic migrations or that the migration system is broken.
+**Migration contract:** Docker backend startup currently launches Uvicorn directly and does not automatically run `alembic upgrade head`. The documented local startup workflow therefore treats database migrations as an explicit developer step. Task 42 Batch 2 verified this migration contract using fresh databases: migrations are functional and must be applied explicitly before starting a database-backed backend. This documentation does not claim automatic migrations.
 
 
 - Python

@@ -214,7 +214,7 @@ Verified state:
 Latest Task 41 commit:
 `215b5d6 test(security): close rag tenant isolation verification`
 
-Task 41 is verified locally and has not been pushed.
+Task 41 is verified and included in the released history.
 
 ## Current Verified Repository State
 
@@ -224,9 +224,16 @@ Task 41 is verified locally and has not been pushed.
 - Task 41 is CLOSED / VERIFIED LOCALLY, including owner-aware vector indexing, owner-scoped retrieval, Chroma owner filtering, reciprocal/identical-content isolation coverage, fail-closed ownerless-vector behavior, and legacy-vector lifecycle guidance.
 - Project completion is now in Task 42 release-readiness/documentation reconciliation; this does not define or invent a historical Task 42 scope.
 
+- Task 42 Batch 1 is CLOSED / VERIFIED.
+- Task 42 Batch 2 is CLOSED / VERIFIED.
+- Task 42 final release-readiness audit is CLOSED / VERIFIED.
+- No required follow-up Tasks 43–45 exist for the current project scope.
+- Project status: COMPLETE / PORTFOLIO-READY.
+- Released commit: `0789c9a`.
+- Released branch: `main`.
+- `origin/main` contains the released state.
+- There is no active Next Task for the current project scope.
+
 ## Current Runtime Contract
 
-The Docker backend startup command currently launches Uvicorn directly. The repository does not currently demonstrate an automatic `alembic upgrade head` step during container startup. Local setup should therefore treat migration execution as an explicit developer/runtime contract until Task 42 Batch 2 verifies the intended startup procedure. This documentation does not classify migrations as broken and does not claim automatic migrations.
-
-## Next Task
-- Task 41.
+The Docker backend startup command launches Uvicorn directly. It does not automatically execute `alembic upgrade head`. The documented local startup workflow therefore requires an explicit Alembic migration step before starting the database-backed backend. Task 42 Batch 2 verified this migration contract against fresh migrated and unmigrated databases. The migration system is functional; migrations are an explicit/manual startup prerequisite rather than an automatic container-start action.

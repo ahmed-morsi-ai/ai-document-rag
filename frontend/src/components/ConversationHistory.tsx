@@ -1,3 +1,4 @@
+import ReactMarkdown from "react-markdown";
 import type { ChatMessage } from "../types/conversations";
 
 interface ConversationHistoryProps {
@@ -82,9 +83,13 @@ export function ConversationHistory({
               </div>
 
               <div className="chat-message-surface">
-                <p className="chat-message-content">
-                  {message.content}
-                </p>
+                <div className="chat-message-content">
+                  {message.role === "assistant" ? (
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                  ) : (
+                    <p>{message.content}</p>
+                  )}
+                </div>
 
                 {message.role === "assistant" &&
                 message.sources &&

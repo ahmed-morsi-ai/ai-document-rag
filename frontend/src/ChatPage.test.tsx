@@ -1184,6 +1184,69 @@ describe("ChatPage", () => {
     );
   });
 
+  it("renders assistant markdown formatting", async () => {
+    sendMessageMock.mockResolvedValueOnce({
+      query: "hello",
+      answer:
+        "The **security model** includes:\n\n- Owner-scoped retrieval\n- Tenant isolation",
+      sources: [],
+    });
+
+    getConversationsMock
+      .mockResolvedValueOnce({ conversations: [] })
+      .mockResolvedValueOnce({ conversations: [conversation] });
+
+    getConversationMessagesMock.mockResolvedValueOnce({
+      conversation,
+      messages: [
+        {
+          id: "message-user",
+          role: "user",
+          content: "hello",
+          sequence_number: 1,
+          created_at: "2026-01-02T00:00:00Z",
+        },
+        {
+          id: "message-assistant",
+          role: "assistant",
+          content:
+            "The **security model** includes:\n\n- Owner-scoped retrieval\n- Tenant isolation",
+          sequence_number: 2,
+          created_at: "2026-01-02T00:01:00Z",
+        },
+      ],
+    });
+
+    renderPage();
+
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Message" }),
+      { target: { value: "hello" } },
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Send" }),
+    );
+
+    await waitFor(() => {
+      const messageContent = document.querySelector(
+        ".chat-message-assistant .chat-message-content",
+      );
+
+      expect(messageContent).not.toBeNull();
+      expect(messageContent?.querySelector("strong")).toHaveTextContent(
+        "security model",
+      );
+      expect(messageContent?.querySelectorAll("li")).toHaveLength(2);
+      expect(messageContent).toHaveTextContent(
+        "Owner-scoped retrieval",
+      );
+      expect(messageContent).toHaveTextContent(
+        "Tenant isolation",
+      );
+    });
+  });
+
   it("renders multiple retrieved sources in backend order", async () => {
     sendMessageMock.mockResolvedValueOnce({
       query: "hello",

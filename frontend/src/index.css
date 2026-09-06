@@ -1457,8 +1457,6 @@ button,
 
 .chat-workspace {
   min-height: calc(100vh - 120px);
-  display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -1469,14 +1467,14 @@ button,
 .chat-workspace-main {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: 300px minmax(0, 1fr);
   min-height: 0;
 }
 
 .chat-workspace-sidebar {
   min-width: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   border-right: 1px solid var(--color-border);
   background: var(--color-surface-muted);
 }
@@ -2046,7 +2044,7 @@ button,
 }
 
 .chat-message-list {
-  width: min(900px, 100%);
+  width: min(1100px, 100%);
   margin: 0 auto;
   display: grid;
   gap: 18px;
@@ -2080,8 +2078,9 @@ button,
 }
 
 .chat-message-surface {
-  max-width: min(760px, 92%);
-  padding: 13px 15px;
+  width: min(920px, 100%);
+  max-width: 100%;
+  padding: 15px 17px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
@@ -2098,8 +2097,63 @@ button,
   color: var(--color-text-primary);
   font-size: 14px;
   line-height: 1.72;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.chat-message-content > :first-child {
+  margin-top: 0;
+}
+
+.chat-message-content > :last-child {
+  margin-bottom: 0;
+}
+
+.chat-message-content p {
+  margin: 0 0 10px;
+}
+
+.chat-message-content ul,
+.chat-message-content ol {
+  margin: 0 0 10px;
+  padding-left: 22px;
+}
+
+.chat-message-content li + li {
+  margin-top: 5px;
+}
+
+.chat-message-content strong {
+  font-weight: 750;
+}
+
+.chat-message-content h1,
+.chat-message-content h2,
+.chat-message-content h3 {
+  margin: 14px 0 8px;
+  color: var(--color-text-primary);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.chat-message-content code {
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: var(--color-surface-muted);
+  font-size: 0.92em;
+}
+
+.chat-message-content pre {
+  margin: 12px 0;
+  padding: 12px;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.chat-message-content pre code {
+  padding: 0;
+  background: transparent;
 }
 
 .chat-message-user .chat-message-content {

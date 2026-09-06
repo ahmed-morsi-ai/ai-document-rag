@@ -1,47 +1,34 @@
 # AI Document RAG
 
-AI Document RAG is a full-stack document question-answering application that lets authenticated users upload documents, process and index their content for semantic retrieval, and chat against the available document context.
+**Secure, full-stack Retrieval-Augmented Generation platform for document-grounded conversations.**
 
-The project combines a FastAPI backend, PostgreSQL persistence, persistent vector storage, provider-independent RAG services, local LLM integration through Ollama, and a React/TypeScript frontend.
+AI Document RAG is a full-stack application that lets authenticated users upload PDF, DOCX, and TXT documents, process and index their content for semantic retrieval, and chat against relevant document context.
 
-## Current Verified Feature Set
+The project combines a **FastAPI backend**, **React 19 + TypeScript frontend**, **PostgreSQL persistence**, **persistent Chroma vector storage**, **provider-independent RAG boundaries**, and **local LLM generation through Ollama**.
 
+The system is designed with a strong emphasis on **ownership-aware retrieval, tenant isolation, deterministic source evidence, persistent conversations, and verification-driven engineering**.
 
-The current verified product includes:
+## Why This Project
 
-**Backend:** authentication, document lifecycle, parsing, chunking, embeddings, owner-aware indexing, owner-scoped retrieval, RAG orchestration, Ollama integration, chat persistence, conversations, evaluation, reliability hardening, and security/tenant-isolation verification.
+- **Secure document retrieval** — authenticated retrieval is owner-scoped at the vector-store boundary, with no unrestricted fallback.
+- **Grounded answers** — chat responses expose deterministic source evidence derived directly from retrieved results.
+- **Production-minded architecture** — persistence, deletion lifecycles, migrations, reliability hardening, and provider abstractions are explicitly implemented.
+- **Verification-first engineering** — backend/frontend regression testing plus deterministic retrieval and grounding evaluation are included.
 
-**Frontend:** authenticated application shell, dashboard, upload, document search and pagination, document deletion, conversation search and pagination, chat, source/citation display, themes, responsive behavior, and accessibility-oriented UI behavior.
+## Current Highlights
 
+| Area | Current capability |
+| --- | --- |
+| Documents | PDF, DOCX, TXT upload and processing |
+| Retrieval | Semantic top-k retrieval with owner-scoped vector filtering |
+| RAG | Provider-independent context assembly and source evidence |
+| Chat | Persistent PostgreSQL-backed conversations and messages |
+| Frontend | React 19 + TypeScript + responsive authenticated UI |
+| LLM | Local Ollama integration |
+| Evaluation | Retrieval and grounding evaluation datasets |
+| Verification | 331 backend tests + 76 frontend tests |
 
-The currently implemented and verified product includes:
-
-- User registration and login with JWT authentication.
-- Protected frontend routes and authenticated backend access.
-- Ownership-aware access to user-owned documents and conversations.
-- Upload and processing of PDF, DOCX, and TXT documents.
-- Document validation and persistent document metadata.
-- Document text extraction and deterministic chunking.
-- Embedding generation through a provider abstraction and Sentence Transformers.
-- Persistent vector storage with document-scoped deletion.
-- Semantic retrieval with configurable top-k results.
-- Provider-independent RAG context construction.
-- Backend Chat/RAG responses expose deterministic, provider-independent source evidence derived from retrieval results.
-- LLM answer generation through the LLM provider abstraction with an Ollama implementation.
-- PostgreSQL-backed conversation and message persistence.
-- Ordered conversation history.
-- Deterministic titles for newly created conversations.
-- Ownership-aware conversation deletion with associated message cleanup.
-- Ownership-aware document deletion with file and vector cleanup.
-- Frontend chat, conversation history, message sending, retry behavior, and deletion flows.
-- Chat-side document availability visibility.
-- A shared authenticated application shell with Chat/Documents navigation, New Chat, active states, logout, and responsive navigation.
-- User-selectable Light and Dark themes with persisted preference.
-- A redesigned Chat Workspace with a conversation sidebar, document-context area, conversation header, message presentation, and responsive composer.
-- A polished Dashboard/Documents workspace with responsive document cards, upload presentation, explicit document states, deletion confirmation, and a clear Document-to-Chat path.
-- Automated frontend and backend regression tests.
-
-## High-Level Architecture
+## Architecture
 
 ```text
 React / TypeScript Frontend
